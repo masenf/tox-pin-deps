@@ -15,6 +15,7 @@ authors = [
 dependencies = [
     'tox',
 ]
+requires-python = ">=3.7"
 license = {file = "LICENSE"}
 classifiers = [
     'Development Status :: 4 - Beta',
