@@ -4,7 +4,6 @@ import tempfile
 from tox import hookimpl
 from tox.config import DepConfig
 
-REQUIREMENTS = "{toxinidir}/requirements/{envname}-requirements.txt"
 CUSTOM_COMPILE_COMMAND = "tox -e {envname} --recreate --pip-compile"
 
 
@@ -12,7 +11,7 @@ def _requirements_file(venv):
     return Path(
         venv.envconfig.config.toxinidir,
         "requirements",
-        f"{venv.envconfig.envname}-requirements.txt",
+        f"{venv.envconfig.envname}.txt",
     )
 
 
@@ -24,7 +23,7 @@ def tox_addoption(parser):
         default=False,
         help=(
             "Run `pip-compile` on the deps, and copy the result to "
-            "{toxinidir}/requirements/{envname}-requiresments.txt"
+            "{toxinidir}/requirements/{envname}.txt"
         ),
     )
     parser.add_argument(
@@ -51,7 +50,7 @@ def tox_testenv_install_deps(venv, action):
     env_requirements = _requirements_file(venv)
     deps = _deps(venv)
     if g_config.option.pip_compile and deps:
-        action.setactivity("installdeps", "piptools")
+        action.setactivity("installdeps", "pip-tools")
         venv._pcall(
             ["pip", "install", "pip-tools"],
             cwd=venv.path,
@@ -59,7 +58,11 @@ def tox_testenv_install_deps(venv, action):
         )
         action.setactivity("pip-compile", "--output-file {}".format(env_requirements))
         env_requirements.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile() as tf:
+        with tempfile.NamedTemporaryFile(
+            prefix=f".tox-pin-deps-{venv.envconfig.envname}-requirements.",
+            suffix=".in",
+            dir=g_config.toxinidir,
+        ) as tf:
             tf.write("\n".join(str(d) for d in deps).encode())
             tf.flush()
             venv._pcall(
