@@ -91,11 +91,8 @@ def tox_testenv_install_deps(venv, action):
             cwd=venv.path,
             action=action,
         )
-        opts = _opts(venv)
-        action.setactivity(
-            "pip-compile",
-            str(["--output-file", str(env_requirements)] + opts),
-        )
+        opts = ["--output-file", str(env_requirements), *_opts(venv)]
+        action.setactivity("pip-compile", str(opts))
         env_requirements.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(
             prefix=f".tox-pin-deps-{venv.envconfig.envname}-requirements.",
@@ -105,7 +102,7 @@ def tox_testenv_install_deps(venv, action):
             tf.write("\n".join(str(d) for d in deps).encode())
             tf.flush()
             venv._pcall(
-                ["pip-compile", tf.name, "--output-file", env_requirements] + opts,
+                ["pip-compile", tf.name] + opts,
                 cwd=venv.path,
                 action=action,
                 env={"CUSTOM_COMPILE_COMMAND": _custom_command(venv)},
