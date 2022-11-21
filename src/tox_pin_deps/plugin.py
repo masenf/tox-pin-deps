@@ -7,14 +7,14 @@ from tox import hookimpl
 from tox.config import DepConfig
 
 ENV_PIP_COMPILE_OPTS = "PIP_COMPILE_OPTS"
-CUSTOM_COMPILE_COMMAND = "tox -e {envname} --recreate --pip-compile"
+CUSTOM_COMPILE_COMMAND = "tox -e {envname} --pip-compile"
 
 
-def _requirements_file(venv):
+def _requirements_file(envconfig):
     return Path(
-        venv.envconfig.config.toxinidir,
+        envconfig.config.toxinidir,
         "requirements",
-        f"{venv.envconfig.envname}.txt",
+        f"{envconfig.envname}.txt",
     )
 
 
@@ -78,11 +78,22 @@ def _opts(venv):
 
 
 @hookimpl
+def tox_configure(config):
+    if config.option.ignore_pins or config.option.pip_compile:
+        return
+    for envconfig in (config.envconfigs[envname] for envname in config.envlist):
+        env_requirements = _requirements_file(envconfig)
+        if env_requirements.exists():
+            # set the testenv deps early to avoid recreating the venv over and over
+            envconfig.deps = [DepConfig(f"-r{env_requirements}")]
+
+
+@hookimpl
 def tox_testenv_install_deps(venv, action):
     g_config = venv.envconfig.config
     if g_config.option.ignore_pins:
         return
-    env_requirements = _requirements_file(venv)
+    env_requirements = _requirements_file(venv.envconfig)
     deps = _deps(venv)
     if g_config.option.pip_compile and deps:
         action.setactivity("installdeps", "pip-tools")
@@ -107,5 +118,6 @@ def tox_testenv_install_deps(venv, action):
                 action=action,
                 env={"CUSTOM_COMPILE_COMMAND": _custom_command(venv)},
             )
+    # if the env_requirements exist after pip-compile, point testenv deps at it for pip to use
     if env_requirements.exists():
         venv.envconfig.deps = [DepConfig(f"-r{env_requirements}")]
