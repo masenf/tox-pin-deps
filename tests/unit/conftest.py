@@ -55,6 +55,14 @@ def venv(envconfig):
 
 
 @pytest.fixture
+def dot_venv(config, envconfig, venv):
+    envconfig.envname = ".package"
+    config.envconfigs[envconfig.envname] = envconfig
+    config.envlist = [envconfig.envname]
+    return venv
+
+
+@pytest.fixture
 def mock_get_resolved_dependencies(venv):
     def get_resolved_dependencies():
         return venv.envconfig.deps

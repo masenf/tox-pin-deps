@@ -32,21 +32,17 @@ def test_tox_configure(
 
 
 def test_tox_configure_dot_envname(
-    venv,
+    dot_venv,
     config,
-    envconfig,
     action,
     deps_present,
     pip_compile,
 ):
-    envconfig.envname = ".package"
-    config.envconfigs[envconfig.envname] = envconfig
-    config.envlist = [envconfig.envname]
     assert tox_pin_deps.plugin.tox_configure(config) is None
-    venv.get_resolved_dependencies.assert_not_called()
-    venv._pcall.assert_not_called()
-    assert venv.envconfig.deps == deps_present
-    assert not venv.envconfig.recreate
+    dot_venv.get_resolved_dependencies.assert_not_called()
+    dot_venv._pcall.assert_not_called()
+    assert dot_venv.envconfig.deps == deps_present
+    assert not dot_venv.envconfig.recreate
 
 
 def test_tox_testenv_install_deps(
@@ -128,12 +124,11 @@ def test_tox_testenv_install_deps_will_install(
 
 
 def test_tox_testenv_install_deps_dot_envname(
-    venv,
+    dot_venv,
     action,
     deps_present,
 ):
-    venv.envconfig.envname = ".package"
-    assert tox_pin_deps.plugin.tox_testenv_install_deps(venv, action) is None
-    venv.get_resolved_dependencies.assert_not_called()
-    venv._pcall.assert_not_called()
-    assert venv.envconfig.deps == deps_present
+    assert tox_pin_deps.plugin.tox_testenv_install_deps(dot_venv, action) is None
+    dot_venv.get_resolved_dependencies.assert_not_called()
+    dot_venv._pcall.assert_not_called()
+    assert dot_venv.envconfig.deps == deps_present
