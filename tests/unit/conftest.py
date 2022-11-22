@@ -13,6 +13,7 @@ def config(tmp_path):
     config = mock.Mock()
     config.toxinidir = tmp_path / "project_directory"
     config.toxinidir.mkdir()
+    config.option.pip_compile_opts = None
     return config
 
 
@@ -33,6 +34,7 @@ def envconfig(venv_name, config):
     envconfig = mock.Mock()
     envconfig.config = config
     envconfig.envname = venv_name
+    envconfig.pip_compile_opts = None
     return envconfig
 
 
@@ -80,3 +82,32 @@ def action():
 @pytest.fixture
 def parser():
     return mock.Mock()
+
+
+@pytest.fixture(
+    params=[None, "-v"], ids=["no_PIP_COMPILE_OPTS", "PIP_COMPILE_OPTS='-v'"]
+)
+def pip_compile_opts_env(request, monkeypatch):
+    if request.param:
+        monkeypatch.setenv("PIP_COMPILE_OPTS", request.param)
+    return request.param
+
+
+@pytest.fixture(
+    params=[None, "--quiet"],
+    ids=["no_--pip-compile-opts", "--pip-compile-opts='--quiet'"],
+)
+def pip_compile_opts_cli(request, venv):
+    if request.param:
+        venv.envconfig.config.option.pip_compile_opts = request.param
+    return request.param
+
+
+@pytest.fixture(
+    params=[None, "--generate-hashes -v"],
+    ids=["no_pip_compile_opts", "pip_compile_opts = --generate-hashes"],
+)
+def pip_compile_opts_testenv(request, venv):
+    if request.param:
+        venv.envconfig.pip_compile_opts = request.param
+    return request.param
