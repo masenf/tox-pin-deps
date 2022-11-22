@@ -1,3 +1,5 @@
+import shlex
+
 import tox_pin_deps.plugin
 
 
@@ -12,6 +14,9 @@ def test_tox_testenv_install_deps(
     action,
     ignore_pins,
     pip_compile,
+    pip_compile_opts_env,
+    pip_compile_opts_cli,
+    pip_compile_opts_testenv,
     deps,
     env_requirements,
 ):
@@ -35,6 +40,13 @@ def test_tox_testenv_install_deps(
             assert cmd[0] == "pip-compile"
             # not mocking tempfile at this time
             # assert cmd[1] == tf.name
-            assert cmd[2:] == ["--output-file", env_requirements]
+            exp_opts = []
+            if pip_compile_opts_testenv:
+                exp_opts.extend(shlex.split(pip_compile_opts_testenv))
+            if pip_compile_opts_cli:
+                exp_opts.extend(shlex.split(pip_compile_opts_cli))
+            if pip_compile_opts_env:
+                exp_opts.extend(shlex.split(pip_compile_opts_env))
+            assert cmd[2:] == ["--output-file", str(env_requirements)] + exp_opts
         else:
             venv._pcall.assert_not_called()
