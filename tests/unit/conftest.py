@@ -39,6 +39,7 @@ def envconfig(venv_name, config):
     envconfig.config = config
     envconfig.envname = venv_name
     envconfig.pip_compile_opts = None
+    envconfig.recreate = False
     config.envconfigs[venv_name] = envconfig
     config.envlist.append(venv_name)
     return envconfig

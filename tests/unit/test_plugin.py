@@ -25,6 +25,28 @@ def test_tox_configure(
         assert len(venv.envconfig.deps) == 1
     else:
         assert venv.envconfig.deps == deps
+    if pip_compile and not ignore_pins:
+        assert venv.envconfig.recreate
+    else:
+        assert not venv.envconfig.recreate
+
+
+def test_tox_configure_dot_envname(
+    venv,
+    config,
+    envconfig,
+    action,
+    deps_present,
+    pip_compile,
+):
+    envconfig.envname = ".package"
+    config.envconfigs[envconfig.envname] = envconfig
+    config.envlist = [envconfig.envname]
+    assert tox_pin_deps.plugin.tox_configure(config) is None
+    venv.get_resolved_dependencies.assert_not_called()
+    venv._pcall.assert_not_called()
+    assert venv.envconfig.deps == deps_present
+    assert not venv.envconfig.recreate
 
 
 def test_tox_testenv_install_deps(
@@ -41,16 +63,13 @@ def test_tox_testenv_install_deps(
         assert venv.envconfig.deps == deps
     else:
         venv.get_resolved_dependencies.assert_called_once()
-        if env_requirements:
-            assert venv.envconfig.deps[0].name == f"-r{env_requirements}"
-            assert len(venv.envconfig.deps) == 1
-        else:
-            assert venv.envconfig.deps == deps
         if pip_compile and deps:
             if env_requirements is None:
                 env_requirements = tox_pin_deps.plugin._requirements_file(
                     venv.envconfig
                 )
+            assert venv.envconfig.deps[0].name == f"-r{env_requirements}"
+            assert len(venv.envconfig.deps) == 1
             assert len(venv._pcall.mock_calls) == 2
             assert venv._pcall.mock_calls[0][1] == (["pip", "install", "pip-tools"],)
             cmd = venv._pcall.mock_calls[1][1][0]
@@ -60,6 +79,7 @@ def test_tox_testenv_install_deps(
             start_idx = cmd.index("--output-file")
             assert cmd[start_idx:] == ["--output-file", str(env_requirements)]
         else:
+            assert venv.envconfig.deps == deps
             venv._pcall.assert_not_called()
 
 
