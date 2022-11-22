@@ -14,6 +14,8 @@ def config(tmp_path):
     config.toxinidir = tmp_path / "project_directory"
     config.toxinidir.mkdir()
     config.option.pip_compile_opts = None
+    config.option.pip_compile = True
+    config.option.ignore_pins = False
     config.envconfigs = {}
     config.envlist = []
     return config
@@ -51,18 +53,27 @@ def venv(envconfig):
     return venv
 
 
-@pytest.fixture(
-    params=[[], [mock.Mock(name="foo")]],
-    ids=["deps=[]", "deps=[foo]"],
-)
-def deps(request, venv):
-    venv.envconfig.deps = request.param
-
+@pytest.fixture
+def mock_get_resolved_dependencies(venv):
     def get_resolved_dependencies():
         return venv.envconfig.deps
 
     venv.get_resolved_dependencies = mock.Mock(side_effect=get_resolved_dependencies)
+
+
+@pytest.fixture(
+    params=[[], [mock.Mock(name="foo")]],
+    ids=["deps=[]", "deps=[foo]"],
+)
+def deps(request, venv, mock_get_resolved_dependencies):
+    venv.envconfig.deps = request.param
     return request.param
+
+
+@pytest.fixture
+def deps_present(venv, mock_get_resolved_dependencies):
+    venv.envconfig.deps = [mock.Mock(name="foo")]
+    return venv.envconfig.deps
 
 
 @pytest.fixture(
@@ -115,3 +126,39 @@ def pip_compile_opts_testenv(request, venv):
     if request.param:
         venv.envconfig.pip_compile_opts = request.param
     return request.param
+
+
+@pytest.fixture(params=[True, False], ids=["skipsdist", "noskipsdist"])
+def skipsdist(request, config):
+    config.skipsdist = request.param
+    return request.param
+
+
+@pytest.fixture(params=[True, False], ids=["skip_install", "no_skip_install"])
+def skip_install(request, envconfig):
+    envconfig.skip_install = request.param
+    return request.param
+
+
+@pytest.fixture(params=[True, False], ids=["setup.py", "no_setup.py"])
+def setup_py(request, config):
+    if request.param:
+        setup_py = config.toxinidir / "setup.py"
+        setup_py.touch()
+        return setup_py
+
+
+@pytest.fixture(params=[True, False], ids=["setup.cfg", "no_setup.cfg"])
+def setup_cfg(request, config):
+    if request.param:
+        setup_cfg = config.toxinidir / "setup.cfg"
+        setup_cfg.touch()
+        return setup_cfg
+
+
+@pytest.fixture(params=[True, False], ids=["pyproject.toml", "no_pyproject.toml"])
+def pyproject_toml(request, config):
+    if request.param:
+        pyproject_toml = config.toxinidir / "pyproject.toml"
+        pyproject_toml.touch()
+        return pyproject_toml
