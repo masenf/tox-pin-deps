@@ -9,6 +9,23 @@ def test_tox_addoption(parser):
     assert parser.add_argument.call_args_list[1][0] == ("--ignore-pins",)
 
 
+def test_tox_configure(
+    venv,
+    config,
+    ignore_pins,
+    pip_compile,
+    deps,
+    env_requirements,
+):
+    assert tox_pin_deps.plugin.tox_configure(config) is None
+    venv.get_resolved_dependencies.assert_not_called()
+    if env_requirements and not (ignore_pins or pip_compile):
+        assert venv.envconfig.deps[0].name == f"-r{env_requirements}"
+        assert len(venv.envconfig.deps) == 1
+    else:
+        assert venv.envconfig.deps == deps
+
+
 def test_tox_testenv_install_deps(
     venv,
     action,
@@ -33,7 +50,9 @@ def test_tox_testenv_install_deps(
             assert venv.envconfig.deps == deps
         if pip_compile and deps:
             if env_requirements is None:
-                env_requirements = tox_pin_deps.plugin._requirements_file(venv)
+                env_requirements = tox_pin_deps.plugin._requirements_file(
+                    venv.envconfig
+                )
             assert len(venv._pcall.mock_calls) == 2
             assert venv._pcall.mock_calls[0][1] == (["pip", "install", "pip-tools"],)
             cmd = venv._pcall.mock_calls[1][1][0]
