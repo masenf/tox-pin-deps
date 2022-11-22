@@ -8,6 +8,7 @@ from tox.config import DepConfig
 
 ENV_PIP_COMPILE_OPTS = "PIP_COMPILE_OPTS"
 CUSTOM_COMPILE_COMMAND = "tox -e {envname} --pip-compile"
+DIST_REQUIREMENTS_SOURCES = ["pyproject.toml", "setup.cfg", "setup.py"]
 
 
 def _requirements_file(envconfig):
@@ -16,6 +17,19 @@ def _requirements_file(envconfig):
         "requirements",
         f"{envconfig.envname}.txt",
     )
+
+
+def _other_sources(envconfig):
+    if envconfig.skip_install or envconfig.config.skipsdist:
+        return []
+    return [
+        path
+        for path in [
+            Path(envconfig.config.toxinidir, source_file)
+            for source_file in DIST_REQUIREMENTS_SOURCES
+        ]
+        if path.exists()
+    ]
 
 
 @hookimpl
@@ -93,6 +107,8 @@ def tox_testenv_install_deps(venv, action):
     g_config = venv.envconfig.config
     if g_config.option.ignore_pins:
         return
+    if venv.envconfig.envname.startswith("."):
+        return
     env_requirements = _requirements_file(venv.envconfig)
     deps = _deps(venv)
     if g_config.option.pip_compile and deps:
@@ -102,7 +118,11 @@ def tox_testenv_install_deps(venv, action):
             cwd=venv.path,
             action=action,
         )
-        opts = ["--output-file", str(env_requirements), *_opts(venv)]
+        opts = [str(s) for s in _other_sources(venv.envconfig)] + [
+            "--output-file",
+            str(env_requirements),
+            *_opts(venv),
+        ]
         action.setactivity("pip-compile", str(opts))
         env_requirements.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(
