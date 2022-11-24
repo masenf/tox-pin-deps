@@ -1,3 +1,4 @@
+from pathlib import Path
 import shlex
 
 import tox_pin_deps.plugin
@@ -31,9 +32,6 @@ def test_tox_testenv_install_deps(
     action,
     ignore_pins,
     pip_compile,
-    pip_compile_opts_env,
-    pip_compile_opts_cli,
-    pip_compile_opts_testenv,
     deps,
     env_requirements,
 ):
@@ -59,13 +57,63 @@ def test_tox_testenv_install_deps(
             assert cmd[0] == "pip-compile"
             # not mocking tempfile at this time
             # assert cmd[1] == tf.name
-            exp_opts = []
-            if pip_compile_opts_testenv:
-                exp_opts.extend(shlex.split(pip_compile_opts_testenv))
-            if pip_compile_opts_cli:
-                exp_opts.extend(shlex.split(pip_compile_opts_cli))
-            if pip_compile_opts_env:
-                exp_opts.extend(shlex.split(pip_compile_opts_env))
-            assert cmd[2:] == ["--output-file", str(env_requirements)] + exp_opts
+            start_idx = cmd.index("--output-file")
+            assert cmd[start_idx:] == ["--output-file", str(env_requirements)]
         else:
             venv._pcall.assert_not_called()
+
+
+def test_tox_testenv_install_deps_will_install(
+    venv,
+    action,
+    pip_compile_opts_env,
+    pip_compile_opts_cli,
+    pip_compile_opts_testenv,
+    deps_present,
+    skipsdist,
+    skip_install,
+    setup_py,
+    setup_cfg,
+    pyproject_toml,
+):
+    assert tox_pin_deps.plugin.tox_testenv_install_deps(venv, action) is None
+    venv.get_resolved_dependencies.assert_called_once()
+    assert len(venv._pcall.mock_calls) == 2
+    assert venv._pcall.mock_calls[0][1] == (["pip", "install", "pip-tools"],)
+    cmd = venv._pcall.mock_calls[1][1][0]
+    assert cmd[0] == "pip-compile"
+    # not mocking tempfile at this time
+    # assert cmd[1] == tf.name
+    exp_files = []
+    if not skipsdist and not skip_install:
+        if pyproject_toml:
+            exp_files.append(str(pyproject_toml))
+        if setup_cfg:
+            exp_files.append(str(setup_cfg))
+        if setup_py:
+            exp_files.append(str(setup_py))
+    start_idx = cmd.index("--output-file")
+    assert cmd[2:start_idx] == exp_files
+    for path_should_exist in cmd[2:start_idx]:
+        assert Path(path_should_exist).exists()
+    env_requirements = tox_pin_deps.plugin._requirements_file(venv.envconfig)
+    exp_opts = ["--output-file", str(env_requirements)]
+    if pip_compile_opts_testenv:
+        exp_opts.extend(shlex.split(pip_compile_opts_testenv))
+    if pip_compile_opts_cli:
+        exp_opts.extend(shlex.split(pip_compile_opts_cli))
+    if pip_compile_opts_env:
+        exp_opts.extend(shlex.split(pip_compile_opts_env))
+    assert cmd[start_idx:] == exp_opts
+
+
+def test_tox_testenv_install_deps_dot_envname(
+    venv,
+    action,
+    deps_present,
+):
+    venv.envconfig.envname = ".package"
+    assert tox_pin_deps.plugin.tox_testenv_install_deps(venv, action) is None
+    venv.get_resolved_dependencies.assert_not_called()
+    venv._pcall.assert_not_called()
+    assert venv.envconfig.deps == deps_present
