@@ -14,6 +14,8 @@ def config(tmp_path):
     config.toxinidir = tmp_path / "project_directory"
     config.toxinidir.mkdir()
     config.option.pip_compile_opts = None
+    config.envconfigs = {}
+    config.envlist = []
     return config
 
 
@@ -35,6 +37,8 @@ def envconfig(venv_name, config):
     envconfig.config = config
     envconfig.envname = venv_name
     envconfig.pip_compile_opts = None
+    config.envconfigs[venv_name] = envconfig
+    config.envlist.append(venv_name)
     return envconfig
 
 
