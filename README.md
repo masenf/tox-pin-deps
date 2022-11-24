@@ -1,5 +1,8 @@
 # tox-pin-deps
 
+[![main branch test status](https://github.com/masenf/tox-pin-deps/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/masenf/tox-pin-deps/actions/workflows/test.yml?query=branch%3Amain)
+[![PyPI version](https://badge.fury.io/py/tox-pin-deps.svg)](https://pypi.org/project/tox-pin-deps)
+
 Run `tox` environments with **_strictly pinned_ dependencies** using simple,
 well-maintained tools (you're probably using already) with **no project or code changes.**
 
