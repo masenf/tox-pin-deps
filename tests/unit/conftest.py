@@ -39,6 +39,7 @@ def envconfig(venv_name, config):
     envconfig.config = config
     envconfig.envname = venv_name
     envconfig.pip_compile_opts = None
+    envconfig.recreate = False
     config.envconfigs[venv_name] = envconfig
     config.envlist.append(venv_name)
     return envconfig
@@ -50,6 +51,14 @@ def venv(envconfig):
     venv.envconfig = envconfig
     venv.path = venv.envconfig.config.toxinidir / "dot-tox" / envconfig.envname
     venv.path.mkdir(parents=True)
+    return venv
+
+
+@pytest.fixture
+def dot_venv(config, envconfig, venv):
+    envconfig.envname = ".package"
+    config.envconfigs[envconfig.envname] = envconfig
+    config.envlist = [envconfig.envname]
     return venv
 
 

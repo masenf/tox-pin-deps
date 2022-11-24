@@ -93,13 +93,21 @@ def _opts(venv):
 
 @hookimpl
 def tox_configure(config):
-    if config.option.ignore_pins or config.option.pip_compile:
+    if config.option.ignore_pins:
         return
-    for envconfig in (config.envconfigs[envname] for envname in config.envlist):
-        env_requirements = _requirements_file(envconfig)
-        if env_requirements.exists():
-            # set the testenv deps early to avoid recreating the venv over and over
-            envconfig.deps = [DepConfig(f"-r{env_requirements}")]
+    for envconfig in (
+        config.envconfigs[envname]
+        for envname in config.envlist
+        if not envname.startswith(".")  # avoid "internal" environments
+    ):
+        if config.option.pip_compile:
+            # compile mode: --recreate to ensure install_deps will run
+            envconfig.recreate = True
+        else:
+            # normal mode: use per-env lock file, if it exists
+            env_requirements = _requirements_file(envconfig)
+            if env_requirements.exists():
+                envconfig.deps = [DepConfig(f"-r{env_requirements}")]
 
 
 @hookimpl
@@ -109,7 +117,6 @@ def tox_testenv_install_deps(venv, action):
         return
     if venv.envconfig.envname.startswith("."):
         return
-    env_requirements = _requirements_file(venv.envconfig)
     deps = _deps(venv)
     if g_config.option.pip_compile and deps:
         action.setactivity("installdeps", "pip-tools")
@@ -118,6 +125,7 @@ def tox_testenv_install_deps(venv, action):
             cwd=venv.path,
             action=action,
         )
+        env_requirements = _requirements_file(venv.envconfig)
         opts = [str(s) for s in _other_sources(venv.envconfig)] + [
             "--output-file",
             str(env_requirements),
@@ -138,6 +146,6 @@ def tox_testenv_install_deps(venv, action):
                 action=action,
                 env={"CUSTOM_COMPILE_COMMAND": _custom_command(venv)},
             )
-    # if the env_requirements exist after pip-compile, point testenv deps at it for pip to use
-    if env_requirements.exists():
-        venv.envconfig.deps = [DepConfig(f"-r{env_requirements}")]
+            # replace environment deps with the new lock file
+            venv.envconfig.deps = [DepConfig(f"-r{env_requirements}")]
+    return None  # let the next plugin run
