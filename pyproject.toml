@@ -32,7 +32,7 @@ classifiers = [
 dynamic = ["version", "readme"]
 
 [project.entry-points.tox]
-pin_deps = "tox_pin_deps.plugin"
+pin_deps = "tox_pin_deps.loader"
 
 [project.urls]
 homepage = "https://github.com/masenf/tox-pin-deps"
