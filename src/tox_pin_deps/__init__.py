@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import shlex
 
@@ -31,21 +30,6 @@ def other_sources(root):
         ]
         if path.exists()
     ]
-
-
-def pip_compile_opts(envconfig, option):
-    if hasattr(envconfig, "pip_compile_opts"):
-        # tox 3: access by attribute
-        env_opts = envconfig.pip_compile_opts
-    else:
-        # tox 4: access by getitem
-        env_opts = envconfig["pip_compile_opts"]
-    sources = [
-        env_opts,
-        option.pip_compile_opts,
-        os.environ.get(ENV_PIP_COMPILE_OPTS),
-    ]
-    return [opt for source in sources for opt in shlex.split(source or "")]
 
 
 def tox_add_argument(parser):

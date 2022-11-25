@@ -1,29 +1,53 @@
 """Tox 3 implementation."""
-import tempfile
+from argparse import Namespace
+from pathlib import Path
+import typing as t
 
 from tox import hookimpl
 from tox.config import DepConfig
 
-from . import (
-    custom_command,
-    other_sources,
-    pip_compile_opts,
-    requirements_file,
-    tox_add_argument,
-)
+from . import requirements_file, tox_add_argument
+from .compile import PipCompile
 
 
-def _requirements_file(envconfig):
-    return requirements_file(
-        envconfig.config.toxinidir,
-        envconfig.envname,
-    )
+class ShimBase:
+    def __init__(self, *args, **kwargs):
+        """allow the constructor to ignore arbitrary args"""
 
 
-def _other_sources(envconfig):
-    if envconfig.skip_install or envconfig.config.skipsdist:
-        return []
-    return other_sources(envconfig.config.toxinidir)
+class PipCompileTox3(PipCompile, ShimBase):
+    def __init__(self, venv, action):
+        self.action = action
+        super().__init__(venv)
+
+    @property
+    def toxinidir(self) -> Path:
+        return Path(self.venv.envconfig.config.toxinidir)
+
+    @property
+    def skipsdist(self) -> bool:
+        return self.venv.envconfig.skip_install or self.venv.envconfig.config.skipsdist
+
+    @property
+    def envname(self) -> str:
+        return self.venv.envconfig.envname
+
+    @property
+    def options(self) -> Namespace:
+        return self.venv.envconfig.config.option
+
+    @property
+    def env_pip_compile_opts_env(self) -> t.Optional[str]:
+        return self.venv.envconfig.pip_compile_opts
+
+    def execute(self, cmd, run_id, env=None) -> None:
+        self.action.setactivity(run_id, str(cmd))
+        self.venv._pcall(
+            cmd,
+            cwd=self.venv.path,
+            action=self.action,
+            env=env,
+        )
 
 
 @hookimpl
@@ -59,52 +83,22 @@ def tox_configure(config):
             envconfig.recreate = True
         else:
             # normal mode: use per-env lock file, if it exists
-            env_requirements = _requirements_file(envconfig)
+            env_requirements = requirements_file(
+                toxinidir=config.toxinidir,
+                envname=envconfig.envname,
+            )
             if env_requirements.exists():
                 envconfig.deps = [DepConfig(f"-r{env_requirements}")]
 
 
 @hookimpl
 def tox_testenv_install_deps(venv, action):
-    g_config = venv.envconfig.config
-    if g_config.option.ignore_pins:
+    pct3 = PipCompileTox3(venv, action)
+    if pct3.ignore_pins:
         return
-    if venv.envconfig.envname.startswith("."):
-        return
-    deps = _deps(venv)
-    if g_config.option.pip_compile and deps:
-        action.setactivity("installdeps", "pip-tools")
-        venv._pcall(
-            ["pip", "install", "pip-tools"],
-            cwd=venv.path,
-            action=action,
-        )
-        env_requirements = _requirements_file(venv.envconfig)
-        opts = [str(s) for s in _other_sources(venv.envconfig)] + [
-            "--output-file",
-            str(env_requirements),
-            *pip_compile_opts(envconfig=venv.envconfig, option=g_config.option),
-        ]
-        action.setactivity("pip-compile", str(opts))
-        env_requirements.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(
-            prefix=f".tox-pin-deps-{venv.envconfig.envname}-requirements.",
-            suffix=".in",
-            dir=g_config.toxinidir,
-        ) as tf:
-            tf.write("\n".join(str(d) for d in deps).encode())
-            tf.flush()
-            venv._pcall(
-                ["pip-compile", tf.name] + opts,
-                cwd=venv.path,
-                action=action,
-                env={
-                    "CUSTOM_COMPILE_COMMAND": custom_command(
-                        envname=venv.envconfig.envname,
-                        pip_compile_opts=venv.envconfig.config.option.pip_compile_opts,
-                    )
-                },
-            )
-            # replace environment deps with the new lock file
-            venv.envconfig.deps = [DepConfig(f"-r{env_requirements}")]
+    pinned_deps_spec = pct3.pip_compile(
+        deps=[str(d) for d in _deps(venv)],
+    )
+    if pinned_deps_spec and pct3.want_pip_compile:
+        venv.envconfig.deps = [DepConfig(pinned_deps_spec)]
     return None  # let the next plugin run

@@ -61,8 +61,9 @@ def test_tox_testenv_install_deps(
         venv.get_resolved_dependencies.assert_called_once()
         if pip_compile and deps:
             if env_requirements is None:
-                env_requirements = tox_pin_deps.plugin._requirements_file(
-                    venv.envconfig
+                env_requirements = tox_pin_deps.requirements_file(
+                    toxinidir=venv.envconfig.config.toxinidir,
+                    envname=venv.envconfig.envname,
                 )
             assert venv.envconfig.deps[0].name == f"-r{env_requirements}"
             assert len(venv.envconfig.deps) == 1
@@ -112,7 +113,10 @@ def test_tox_testenv_install_deps_will_install(
     assert cmd[2:start_idx] == exp_files
     for path_should_exist in cmd[2:start_idx]:
         assert Path(path_should_exist).exists()
-    env_requirements = tox_pin_deps.plugin._requirements_file(venv.envconfig)
+    env_requirements = tox_pin_deps.requirements_file(
+        toxinidir=venv.envconfig.config.toxinidir,
+        envname=venv.envconfig.envname,
+    )
     exp_opts = ["--output-file", str(env_requirements)]
     if pip_compile_opts_testenv:
         exp_opts.extend(shlex.split(pip_compile_opts_testenv))
