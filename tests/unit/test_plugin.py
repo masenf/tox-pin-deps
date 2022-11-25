@@ -1,7 +1,88 @@
 from pathlib import Path
 import shlex
+from unittest import mock
+
+import pytest
 
 import tox_pin_deps.plugin
+
+
+@pytest.fixture
+def config(tmp_path, toxinidir, options):
+    """tox3 global config"""
+    config = mock.Mock()
+    config.toxinidir = toxinidir
+    config.option = options
+    config.envconfigs = {}
+    config.envlist = []
+    return config
+
+
+@pytest.fixture
+def envconfig(venv_name, config):
+    """tox3 per-testenv config."""
+    envconfig = mock.Mock()
+    envconfig.config = config
+    envconfig.envname = venv_name
+    envconfig.pip_compile_opts = None
+    envconfig.recreate = False
+    config.envconfigs[venv_name] = envconfig
+    config.envlist.append(venv_name)
+    return envconfig
+
+
+@pytest.fixture
+def venv(envconfig):
+    """tox3 VirtualEnv."""
+    venv = mock.Mock()
+    venv.envconfig = envconfig
+    venv.path = venv.envconfig.config.toxinidir / "dot-tox" / envconfig.envname
+    venv.path.mkdir(parents=True)
+    return venv
+
+
+@pytest.fixture
+def dot_venv(config, envconfig, venv):
+    """Modified tox3 venv to start with a period."""
+    envconfig.envname = ".package"
+    config.envconfigs[envconfig.envname] = envconfig
+    config.envlist = [envconfig.envname]
+    return venv
+
+
+@pytest.fixture
+def mock_get_resolved_dependencies(venv):
+    def get_resolved_dependencies():
+        return venv.envconfig.deps
+
+    venv.get_resolved_dependencies = mock.Mock(side_effect=get_resolved_dependencies)
+
+
+@pytest.fixture
+def deps(deps, envconfig, mock_get_resolved_dependencies):
+    """Set `deps` in the tox3 envconfig."""
+    envconfig.deps = deps
+    return deps
+
+
+@pytest.fixture
+def deps_present(deps_present, envconfig, mock_get_resolved_dependencies):
+    """Set `deps_present` in the tox3 envconfig."""
+    envconfig.deps = deps_present
+    return deps_present
+
+
+@pytest.fixture
+def pip_compile_opts_testenv(envconfig, pip_compile_opts_testenv):
+    """Set pip_compile_opts in the tox3 envconfig"""
+    if pip_compile_opts_testenv:
+        envconfig.pip_compile_opts = pip_compile_opts_testenv
+    return pip_compile_opts_testenv
+
+
+@pytest.fixture
+def action():
+    return mock.Mock()
 
 
 def test_tox_addoption(parser):
