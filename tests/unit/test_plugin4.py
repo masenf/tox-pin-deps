@@ -111,7 +111,7 @@ def test_install(
     pip_compile_installer = tox_pin_deps.plugin4.PipCompileInstaller(venv)
     assert pip_compile_installer.install(deps, None, None) is None
     pip_mock = ShimBaseMock._get_last_instance_and_reset(assert_n_instances=1)
-    if ignore_pins or not deps:
+    if ignore_pins:
         pip_mock._install_mock.assert_called_once_with(
             arguments=deps, section=None, of_type=None
         )
