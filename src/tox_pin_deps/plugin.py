@@ -126,8 +126,7 @@ def tox_testenv_install_deps(venv: VirtualEnv, action: Action) -> None:
     pct3 = PipCompileTox3(venv, action)
     if pct3.ignore_pins:
         return
-    pinned_deps_spec = pct3.pip_compile(deps=[str(d) for d in _deps(venv)])
-    if pinned_deps_spec and pct3.want_pip_compile:
-        # only set the deps if the caller requested `--pip-compile`
+    pinned_deps_spec = pct3.pip_compile(deps=[str(d) for d in _deps(venv) or []])
+    if pinned_deps_spec:
         venv.envconfig.deps = [DepConfig(pinned_deps_spec)]
     return None  # let the next plugin run
