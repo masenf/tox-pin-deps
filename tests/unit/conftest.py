@@ -1,6 +1,115 @@
+from collections import namedtuple
+import re
+import sys
+import types
 from unittest import mock
 
+import attr
 import pytest
+
+
+class ShimBaseMock:
+    _instances = []
+
+    def __init__(self, *args, **kwargs):
+        self._instances.append(self)
+        self._mocks = {}
+
+    def __getattr__(self, name):
+        return self._mocks.setdefault(name, mock.Mock())
+
+    @property
+    def _install_mock(self):
+        return self.__getattr__("install")
+
+    def install(self, *args, **kwargs):
+        return self._install_mock(*args, **kwargs)
+
+    @classmethod
+    def _get_last_instance_and_reset(cls, assert_n_instances=None):
+        if assert_n_instances:
+            assert len(cls._instances) == assert_n_instances
+        last, cls._instances[:] = cls._instances[-1], []
+        return last
+
+
+def noop_decorator(f, *args, **kwargs):
+    if args or kwargs:
+
+        def _noop_decorator_inner():
+            return f()
+
+        return _noop_decorator_inner
+    return f
+
+
+@attr.s(frozen=True)
+class DepConfig:
+    name = attr.ib()
+
+
+@attr.s(frozen=True)
+class PythonDeps:
+    raw = attr.ib()
+    root = attr.ib(default=None)
+
+    def lines(self):
+        return self.raw.splitlines()
+
+
+SpecialMockSpec = namedtuple("SpecialMockSpec", ["module", "objname", "mockobj"])
+MOCK_MODULES = [r"tox(\..+|$)"]
+_ORIGINAL_MODULES = []
+SPECIAL_MOCKS = [
+    SpecialMockSpec("tox.tox_env.python.pip.pip_install", "Pip", ShimBaseMock),
+    SpecialMockSpec("tox.plugin", "impl", noop_decorator),
+    SpecialMockSpec("tox.config", "DepConfig", DepConfig),
+    SpecialMockSpec("tox.tox_env.python.pip.req_file", "PythonDeps", PythonDeps),
+    SpecialMockSpec("tox", "hookimpl", noop_decorator),
+    SpecialMockSpec("tox.config.cli.parser", "DEFAULT_VERBOSITY", 2),
+]
+
+
+def _save_original_modules():
+    for module_pat in MOCK_MODULES:
+        module_patc = re.compile(module_pat)
+        for module_name in sys.modules:
+            if module_patc.match(module_name):
+                _ORIGINAL_MODULES.append((module_name, sys.modules.get(module_name)))
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_collection(session):
+    """No test module will import tox during collection."""
+    _save_original_modules()
+
+    orig_import = __import__
+
+    def import_mock(name, globals_=None, locals_=None, fromlist=(), level=0):
+        for module_pat in MOCK_MODULES:
+            if re.match(module_pat, name):
+                mock_module = mock.MagicMock(__name__=name, spec=types.ModuleType)
+                print("mock module: {}".format(mock_module))
+                for objname in fromlist or []:
+                    for special_mock in SPECIAL_MOCKS:
+                        if (
+                            name == special_mock.module
+                            and objname == special_mock.objname
+                        ):
+                            setattr(mock_module, objname, special_mock.mockobj)
+                            break
+                    else:
+                        # if we don't find a special mock, then set a regular one
+                        setattr(mock_module, objname, mock.Mock(__name__=objname))
+                return mock_module
+        return orig_import(name, globals_, locals_, fromlist, level)
+
+    with mock.patch("builtins.__import__", side_effect=import_mock):
+        yield
+
+    for module_name, orig_module in _ORIGINAL_MODULES:
+        if orig_module:
+            sys.modules[module_name] = orig_module
 
 
 @pytest.fixture
@@ -37,7 +146,7 @@ def ignore_pins(request, options):
 
 
 @pytest.fixture(
-    params=[[], [mock.Mock(name="foo")]],
+    params=[[], ["foo"]],
     ids=["deps=[]", "deps=[foo]"],
 )
 def deps(request):
@@ -46,13 +155,14 @@ def deps(request):
 
 @pytest.fixture
 def deps_present():
-    return [mock.Mock(name="foo")]
+    return ["foo"]
 
 
 @pytest.fixture
 def envname(venv):
-    # tox3 or tox4
-    return venv.envconfig.envname or venv.name
+    if not isinstance(venv.name, mock.Mock):
+        return venv.name  # tox4
+    return venv.envconfig.envname  # tox3
 
 
 @pytest.fixture(
@@ -100,16 +210,13 @@ def pip_compile_opts_testenv(request):
     return request.param
 
 
-# TODO: figure out if these translate to tox4 and how
 @pytest.fixture(params=[True, False], ids=["skipsdist", "noskipsdist"])
-def skipsdist(request, config):
-    config.skipsdist = request.param
+def skipsdist(request):
     return request.param
 
 
 @pytest.fixture(params=[True, False], ids=["skip_install", "no_skip_install"])
-def skip_install(request, envconfig):
-    envconfig.skip_install = request.param
+def skip_install(request):
     return request.param
 
 
