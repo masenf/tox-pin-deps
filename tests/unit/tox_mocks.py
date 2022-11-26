@@ -153,3 +153,11 @@ class MockTox4Context(MockImportContext):
             "tox.tox_env.python.virtual_env.runner", "VirtualEnvRunner"
         ): TestEnvShim,
     }
+
+
+class MockNoToxContext(MockImportContext):
+    MOCK_MODULES = [r"tox(\..+|$)"]
+    SPECIAL_MOCKS = {
+        SpecialMockSpec("tox", "hookimpl"): ImportError("No tox"),
+        SpecialMockSpec("tox.plugin", "impl"): ImportError("No tox"),
+    }
