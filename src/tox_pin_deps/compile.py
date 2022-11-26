@@ -143,9 +143,11 @@ class PipCompile(abc.ABC):
         """
         if self.ignore_pins:
             return None
-        if self._has_pinned_deps and not self.want_pip_compile:
-            return self._pinned_deps  # if we have a lock file, use it
-        if not self.want_pip_compile or not deps or deps == [self._pinned_deps]:
+        if not self.want_pip_compile:
+            if self._has_pinned_deps:
+                # if we have a lock file, use it
+                return self._pinned_deps
+            # otherwise, regular deps processing
             return None
         self.execute(
             cmd=["pip", "install", "pip-tools"],
