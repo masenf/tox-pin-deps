@@ -153,6 +153,7 @@ class PipCompile(abc.ABC):
             cmd=["pip", "install", "pip-tools"],
             run_id="tox-pin-deps",
         )
+        cmd = ["pip-compile"]
         opts = [str(s) for s in self.other_sources] + [
             "--output-file",
             str(self.env_requirements),
@@ -164,10 +165,12 @@ class PipCompile(abc.ABC):
             suffix=".in",
             dir=self.toxinidir,
         ) as tf:
-            tf.write("\n".join(deps).encode())
-            tf.flush()
+            if deps:
+                tf.write("\n".join(deps).encode())
+                tf.flush()
+                cmd.append(tf.name)
             self.execute(
-                cmd=["pip-compile", tf.name] + opts,
+                cmd=cmd + opts,
                 run_id="tox-pin-deps",
                 env={
                     "CUSTOM_COMPILE_COMMAND": custom_command(
