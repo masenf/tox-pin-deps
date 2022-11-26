@@ -138,15 +138,20 @@ def test_install(
         assert cmd[start_idx:] == ["--output-file", str(env_requirements)]
     elif env_requirements:
         exp_deps = tox_pin_deps.plugin4.PythonDeps(
-            f"-r{env_requirements}", env_requirements.parent
+            f"-r{env_requirements}",
+            env_requirements.parent,
         )
         pip_mock._install_mock.assert_called_once_with(
-            arguments=exp_deps, section=None, of_type=None
+            arguments=exp_deps,
+            section=None,
+            of_type=None,
         )
         venv.execute.assert_not_called()
     else:
         pip_mock._install_mock.assert_called_once_with(
-            arguments=deps, section=None, of_type=None
+            arguments=deps,
+            section=None,
+            of_type=None,
         )
         venv.execute.assert_not_called()
 
