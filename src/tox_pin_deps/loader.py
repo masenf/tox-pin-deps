@@ -6,7 +6,7 @@ except ImportError:
     try:
         from tox import hookimpl  # type: ignore # noqa: F401
     except ImportError as ie2:
-        raise RuntimeError("This plugin requires tox 3 or tox 4.") from ie2
+        raise ImportError("This plugin requires tox 3 or tox 4.") from ie2
     else:
         TOX = 3
         from .plugin import (  # noqa: F401
