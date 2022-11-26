@@ -8,7 +8,8 @@ from tox.action import Action  # type: ignore
 from tox.config import Config, DepConfig, Parser  # type: ignore
 from tox.venv import VirtualEnv  # type: ignore
 
-from . import requirements_file, tox_add_argument
+from . import requirements_file
+from .common import tox_add_argument
 from .compile import PipCompile
 
 

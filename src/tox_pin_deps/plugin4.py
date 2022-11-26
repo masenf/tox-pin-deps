@@ -12,7 +12,7 @@ from tox.tox_env.python.pip.req_file import PythonDeps  # type: ignore
 from tox.tox_env.python.virtual_env.runner import VirtualEnvRunner  # type: ignore
 from tox.tox_env.register import ToxEnvRegister  # type: ignore
 
-from . import tox_add_argument
+from .common import tox_add_argument
 from .compile import PipCompile
 
 
@@ -25,7 +25,11 @@ class PipCompileInstaller(PipCompile, Pip):  # type: ignore
 
     @property
     def skipsdist(self) -> bool:
-        return bool(self.venv.pkg_type == "skip")
+        return bool(
+            self.venv.pkg_type == "skip"
+            or self.venv.core.get("skipsdist")
+            or self.venv.conf.get("skip_install")
+        )
 
     @property
     def envname(self) -> str:
