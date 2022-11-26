@@ -61,15 +61,15 @@ def mock_get_resolved_dependencies(venv):
 @pytest.fixture
 def deps(deps, envconfig, mock_get_resolved_dependencies):
     """Set `deps` in the tox3 envconfig."""
-    envconfig.deps = deps
-    return deps
+    envconfig.deps = [tox_pin_deps.plugin.DepConfig(d) for d in deps]
+    return envconfig.deps
 
 
 @pytest.fixture
 def deps_present(deps_present, envconfig, mock_get_resolved_dependencies):
     """Set `deps_present` in the tox3 envconfig."""
-    envconfig.deps = deps_present
-    return deps_present
+    envconfig.deps = [tox_pin_deps.plugin.DepConfig(d) for d in deps_present]
+    return envconfig.deps
 
 
 @pytest.fixture
