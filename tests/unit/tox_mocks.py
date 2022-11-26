@@ -68,6 +68,8 @@ class MockImportContext:
                     SpecialMockSpec(name, objname),
                     mock.Mock(__name__=objname),
                 )
+                if isinstance(obj, Exception):
+                    raise obj
                 setattr(mock_module, objname, obj)
             self._mock_modules.append(mock_module)
             return mock_module
@@ -108,6 +110,7 @@ class MockTox3Context(MockImportContext):
     SPECIAL_MOCKS = {
         SpecialMockSpec("tox.config", "DepConfig"): DepConfig,
         SpecialMockSpec("tox", "hookimpl"): noop_decorator,
+        SpecialMockSpec("tox.plugin", "impl"): ImportError("No tox.plugin in tox3"),
     }
 
 
@@ -141,6 +144,7 @@ class PythonDeps:
 class MockTox4Context(MockImportContext):
     MOCK_MODULES = [r"tox(\..+|$)"]
     SPECIAL_MOCKS = {
+        SpecialMockSpec("tox", "hookimpl"): ImportError("No tox.hookimpl in tox4"),
         SpecialMockSpec("tox.config.cli.parser", "DEFAULT_VERBOSITY"): 2,
         SpecialMockSpec("tox.plugin", "impl"): noop_decorator,
         SpecialMockSpec("tox.tox_env.python.pip.pip_install", "Pip"): InstallShim,
