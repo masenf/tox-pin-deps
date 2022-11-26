@@ -4,9 +4,10 @@ from unittest import mock
 
 import pytest
 
-import tox_pin_deps.plugin4
+from .tox_mocks import MockTox4Context, ShimBaseMock
 
-from .conftest import ShimBaseMock
+with MockTox4Context():
+    import tox_pin_deps.plugin4
 
 
 @pytest.fixture

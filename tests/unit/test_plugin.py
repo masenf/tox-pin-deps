@@ -4,7 +4,10 @@ from unittest import mock
 
 import pytest
 
-import tox_pin_deps.plugin
+from . import tox_mocks
+
+with tox_mocks.MockTox3Context():
+    import tox_pin_deps.plugin
 
 
 @pytest.fixture

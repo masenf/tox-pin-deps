@@ -1,7 +1,11 @@
 import pytest
 
-import tox_pin_deps.plugin
-import tox_pin_deps.plugin4
+from . import tox_mocks
+
+with tox_mocks.MockTox3Context():
+    import tox_pin_deps.plugin
+with tox_mocks.MockTox4Context():
+    import tox_pin_deps.plugin4
 
 
 @pytest.fixture(
