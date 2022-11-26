@@ -71,7 +71,7 @@ class MockImportContext:
                 if isinstance(obj, Exception):
                     raise obj
                 setattr(mock_module, objname, obj)
-            self._mock_modules.append(mock_module)
+            self._mock_modules.append((name, mock_module))
             return mock_module
         return self.__original_import__(name, globals_, locals_, fromlist, level)
 
@@ -85,6 +85,8 @@ class MockImportContext:
         self._patch_import_ctx.__exit__(exc_type, exc_val, exc_tb)
 
     def restore(self):
+        for module_name, mock_module in self._mock_modules:
+            sys.modules.pop(module_name, None)
         for module_name, orig_module in self._original_modules:
             if orig_module:
                 sys.modules[module_name] = orig_module
