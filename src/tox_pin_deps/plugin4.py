@@ -27,8 +27,8 @@ class PipCompileInstaller(PipCompile, Pip):  # type: ignore
     def skipsdist(self) -> bool:
         return bool(
             self.venv.pkg_type == "skip"
-            or self.venv.core.get("skipsdist")
-            or self.venv.conf.get("skip_install")
+            or self.venv.core["skipsdist"]
+            or self.venv.conf["skip_install"]
         )
 
     @property

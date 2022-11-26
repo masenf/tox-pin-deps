@@ -12,7 +12,7 @@ from .conftest import ShimBaseMock
 @pytest.fixture
 def core(toxinidir):
     """tox4 global config"""
-    return dict(toxinidir=toxinidir)
+    return dict(toxinidir=toxinidir, skipsdist=False)
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def options(options):
 @pytest.fixture
 def conf():
     """tox4 per-testenv config."""
-    return dict(pip_compile_opts=None)
+    return dict(pip_compile_opts=None, skip_install=False)
 
 
 @pytest.fixture
