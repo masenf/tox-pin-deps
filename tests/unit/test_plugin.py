@@ -81,6 +81,18 @@ def pip_compile_opts_testenv(envconfig, pip_compile_opts_testenv):
 
 
 @pytest.fixture
+def skipsdist(skipsdist, config):
+    config.skipsdist = skipsdist
+    return skipsdist
+
+
+@pytest.fixture
+def skip_install(skip_install, envconfig):
+    envconfig.skip_install = skip_install
+    return skip_install
+
+
+@pytest.fixture
 def action():
     return mock.Mock()
 

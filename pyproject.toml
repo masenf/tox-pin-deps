@@ -12,9 +12,6 @@ description = "A tox plugin for pinning dependencies."
 authors = [
     {name = "Masen Furer", email = "m_github@0x26.net"},
 ]
-dependencies = [
-    'tox',
-]
 requires-python = ">=3.7"
 license = {file = "LICENSE"}
 classifiers = [
