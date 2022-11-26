@@ -18,6 +18,22 @@ class ShimBaseMock:
     def __getattr__(self, name):
         return self._mocks.setdefault(name, mock.Mock())
 
+    @classmethod
+    def _get_last_instance_and_reset(cls, assert_n_instances=None):
+        if assert_n_instances:
+            assert len(cls._instances) == assert_n_instances
+        if cls._instances:
+            last, cls._instances[:] = cls._instances[-1], []
+            return last
+
+
+@pytest.fixture(autouse=True)
+def _reset_shim_base_mock():
+    yield
+    ShimBaseMock._get_last_instance_and_reset()
+
+
+class InstallShim(ShimBaseMock):
     @property
     def _install_mock(self):
         return self.__getattr__("install")
@@ -25,12 +41,14 @@ class ShimBaseMock:
     def install(self, *args, **kwargs):
         return self._install_mock(*args, **kwargs)
 
-    @classmethod
-    def _get_last_instance_and_reset(cls, assert_n_instances=None):
-        if assert_n_instances:
-            assert len(cls._instances) == assert_n_instances
-        last, cls._instances[:] = cls._instances[-1], []
-        return last
+
+class TestEnvShim(ShimBaseMock):
+    @property
+    def _register_config_mock(self):
+        return self.__getattr__("register_config")
+
+    def register_config(self, *args, **kwargs):
+        return self._register_config_mock(*args, **kwargs)
 
 
 def noop_decorator(f, *args, **kwargs):
@@ -61,12 +79,17 @@ SpecialMockSpec = namedtuple("SpecialMockSpec", ["module", "objname", "mockobj"]
 MOCK_MODULES = [r"tox(\..+|$)"]
 _ORIGINAL_MODULES = []
 SPECIAL_MOCKS = [
-    SpecialMockSpec("tox.tox_env.python.pip.pip_install", "Pip", ShimBaseMock),
+    SpecialMockSpec("tox.tox_env.python.pip.pip_install", "Pip", InstallShim),
     SpecialMockSpec("tox.plugin", "impl", noop_decorator),
     SpecialMockSpec("tox.config", "DepConfig", DepConfig),
     SpecialMockSpec("tox.tox_env.python.pip.req_file", "PythonDeps", PythonDeps),
     SpecialMockSpec("tox", "hookimpl", noop_decorator),
     SpecialMockSpec("tox.config.cli.parser", "DEFAULT_VERBOSITY", 2),
+    SpecialMockSpec(
+        "tox.tox_env.python.virtual_env.runner",
+        "VirtualEnvRunner",
+        TestEnvShim,
+    ),
 ]
 
 

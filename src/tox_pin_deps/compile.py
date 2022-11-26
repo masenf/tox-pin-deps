@@ -43,31 +43,31 @@ class PipCompile(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def options(self) -> Namespace:
+    def options(self) -> Namespace:  # pragma: no cover
         """A Namespace of parsed CLI options."""
         raise NotImplementedError
 
     @property
     @abc.abstractmethod
-    def envname(self) -> str:
+    def envname(self) -> str:  # pragma: no cover
         """The current testenv's name."""
         raise NotImplementedError
 
     @property
     @abc.abstractmethod
-    def toxinidir(self) -> Path:
+    def toxinidir(self) -> Path:  # pragma: no cover
         """Directory containing `tox.ini` (or similar)."""
         raise NotImplementedError
 
     @property
     @abc.abstractmethod
-    def skipsdist(self) -> bool:
+    def skipsdist(self) -> bool:  # pragma: no cover
         """True if the project has no dist."""
         raise NotImplementedError
 
     @property
     @abc.abstractmethod
-    def env_pip_compile_opts_env(self) -> t.Optional[str]:
+    def env_pip_compile_opts_env(self) -> t.Optional[str]:  # pragma: no cover
         """CLI options string from [testenv] pip_compile_opts key."""
         raise NotImplementedError
 
@@ -77,7 +77,7 @@ class PipCompile(abc.ABC):
         cmd: t.Sequence[str],
         run_id: str,
         env: t.Optional[t.Dict[str, str]] = None,
-    ) -> None:
+    ) -> None:  # pragma: no cover
         """Execute the given cmd in the context of `run_id`."""
         raise NotImplementedError
 

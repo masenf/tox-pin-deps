@@ -3,7 +3,7 @@ from . import DEFAULT_REQUIREMENTS_DIRECTORY
 
 try:
     from tox.config.cli.parser import ToxParser  # type: ignore
-except ImportError:
+except ImportError:  # pragma: no cover
     from tox.config import Parser as ToxParser  # type: ignore
 
 

@@ -217,3 +217,24 @@ def test_install_dot_in_name(
         arguments=deps_present, section=None, of_type=None
     )
     dot_venv.execute.assert_not_called()
+
+
+def test_tox_register_tox_env():
+    register = mock.Mock()
+    tox_pin_deps.plugin4.tox_register_tox_env(register)
+    # TODO: assert
+
+
+def test_register_config(venv):
+    inst = tox_pin_deps.plugin4.PinDepsVirtualEnvRunner(None)
+    inst.name = venv.name
+    inst.core = venv.core
+    inst.conf = mock.Mock()
+    inst.register_config()
+    assert isinstance(inst.installer, tox_pin_deps.plugin4.PipCompileInstaller)
+    # TODO: assert
+
+
+def test_tox_add_option(parser):
+    tox_pin_deps.plugin4.tox_add_option(parser)
+    # TODO: assert
