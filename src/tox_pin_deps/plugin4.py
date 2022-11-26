@@ -74,13 +74,13 @@ class PipCompileInstaller(PipCompile, Pip):  # type: ignore
         result.assert_success()
 
     def install(self, arguments: t.Any, section: str, of_type: str) -> None:
-        pinned_deps = None
         compile_deps = None
         if isinstance(arguments, PythonDeps):
             compile_deps = self._deps(arguments)
         elif arguments is None:
             compile_deps = []
 
+        pinned_deps = None
         if compile_deps is not None:
             pinned_deps_spec = self.pip_compile(deps=compile_deps)
             if pinned_deps_spec:
