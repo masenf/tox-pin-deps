@@ -3,7 +3,7 @@ from pathlib import Path
 import typing as t
 
 try:
-    from tox.config.cli.parser import ToxParser  # type: ignore
+    from tox.config.cli.parser import ToxParser
 except ImportError:  # pragma: no cover
     from tox.config import Parser as ToxParser  # type: ignore
 

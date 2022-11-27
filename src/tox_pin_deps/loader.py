@@ -1,7 +1,7 @@
 """Loads the right version of the plugin for your environment."""
 
 try:
-    from tox.plugin import impl  # type: ignore # noqa: F401
+    from tox.plugin import impl  # noqa: F401
 except ImportError:
     try:
         from tox import hookimpl  # type: ignore # noqa: F401

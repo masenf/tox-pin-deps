@@ -3,20 +3,20 @@ from argparse import Namespace
 from pathlib import Path
 import typing as t
 
-from tox.config.cli.parser import DEFAULT_VERBOSITY, ToxParser  # type: ignore
-from tox.execute.request import StdinSource  # type: ignore
-from tox.plugin import impl  # type: ignore
-from tox.tox_env.api import ToxEnvCreateArgs  # type: ignore
-from tox.tox_env.python.pip.pip_install import Pip  # type: ignore
-from tox.tox_env.python.pip.req_file import PythonDeps  # type: ignore
-from tox.tox_env.python.virtual_env.runner import VirtualEnvRunner  # type: ignore
-from tox.tox_env.register import ToxEnvRegister  # type: ignore
+from tox.config.cli.parser import DEFAULT_VERBOSITY, ToxParser
+from tox.execute.request import StdinSource
+from tox.plugin import impl
+from tox.tox_env.api import ToxEnvCreateArgs
+from tox.tox_env.python.pip.pip_install import Pip
+from tox.tox_env.python.pip.req_file import PythonDeps
+from tox.tox_env.python.virtual_env.runner import VirtualEnvRunner
+from tox.tox_env.register import ToxEnvRegister
 
 from .common import tox_add_argument
 from .compile import PipCompile
 
 
-class PipCompileInstaller(PipCompile, Pip):  # type: ignore
+class PipCompileInstaller(PipCompile, Pip):
     """tox4 Installer that uses `pip-compile` or env-specific lock files."""
 
     @property
@@ -95,7 +95,7 @@ class PipCompileInstaller(PipCompile, Pip):  # type: ignore
         )
 
 
-class PinDepsVirtualEnvRunner(VirtualEnvRunner):  # type: ignore
+class PinDepsVirtualEnvRunner(VirtualEnvRunner):
     """EnvRunner that uses PipCompileInstaller."""
 
     def __init__(self, create_args: ToxEnvCreateArgs):
@@ -122,12 +122,12 @@ class PinDepsVirtualEnvRunner(VirtualEnvRunner):  # type: ignore
         return self._installer
 
 
-@impl  # type: ignore
+@impl
 def tox_add_option(parser: ToxParser) -> None:
     tox_add_argument(parser)
 
 
-@impl  # type: ignore
+@impl
 def tox_register_tox_env(register: ToxEnvRegister) -> None:
     """tox4 entry point: set PinDepsVirtualEnvRunner as default_env_runner."""
     register.add_run_env(PinDepsVirtualEnvRunner)
