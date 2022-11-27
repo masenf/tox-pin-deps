@@ -207,6 +207,19 @@ def test_install_will_install(
     assert cmd[start_idx:] == exp_opts
 
 
+def test_install_passthru(venv):
+    mockdep = mock.Mock()
+    pip_compile_installer = tox_pin_deps.plugin4.PipCompileInstaller(venv)
+    assert pip_compile_installer.install(mockdep, None, None) is None
+    pip_mock = ShimBaseMock._get_last_instance_and_reset(assert_n_instances=1)
+    pip_mock._install_mock.assert_called_once_with(
+        arguments=mockdep,
+        section=None,
+        of_type=None,
+    )
+    assert len(venv.execute.mock_calls) == 0
+
+
 def test_install_dot_in_name(
     dot_venv,
     deps_present,
