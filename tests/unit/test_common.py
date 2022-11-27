@@ -9,7 +9,8 @@ with tox_mocks.MockTox4Context():
 
 
 @pytest.fixture(
-    params=[tox_pin_deps.plugin.tox_addoption, tox_pin_deps.plugin4.tox_add_option]
+    params=[tox_pin_deps.plugin.tox_addoption, tox_pin_deps.plugin4.tox_add_option],
+    ids=["tox_addoption(tox3)", "tox_add_option(tox4)"],
 )
 def add_option_hook(request):
     return request.param
@@ -17,5 +18,5 @@ def add_option_hook(request):
 
 def test_tox_add_option(parser, add_option_hook):
     add_option_hook(parser)
-    assert parser.add_argument.call_args_list[0][0] == ("--pip-compile",)
-    assert parser.add_argument.call_args_list[1][0] == ("--ignore-pins",)
+    added_args = [cal[0][0] for cal in parser.add_argument.call_args_list]
+    assert added_args == ["--pip-compile", "--ignore-pins", "--pip-compile-opts"]
