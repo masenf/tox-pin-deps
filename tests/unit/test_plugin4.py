@@ -245,7 +245,10 @@ def test_register_config(venv):
     inst.core = venv.core
     inst.conf = mock.Mock()
     inst.register_config()
-    assert isinstance(inst.installer, tox_pin_deps.plugin4.PipCompileInstaller)
+    orig_installer = inst.installer
+    assert isinstance(orig_installer, tox_pin_deps.plugin4.PipCompileInstaller)
+    # subsequent access to the installer should return the same instance
+    assert inst.installer is orig_installer
     # TODO: assert
 
 
