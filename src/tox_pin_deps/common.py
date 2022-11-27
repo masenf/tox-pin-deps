@@ -1,10 +1,38 @@
 """Common elements for tox3 and tox4."""
-from . import DEFAULT_REQUIREMENTS_DIRECTORY
+from pathlib import Path
+import typing as t
 
 try:
     from tox.config.cli.parser import ToxParser  # type: ignore
 except ImportError:  # pragma: no cover
     from tox.config import Parser as ToxParser  # type: ignore
+
+DIST_REQUIREMENTS_SOURCES = ["pyproject.toml", "setup.cfg", "setup.py"]
+DEFAULT_REQUIREMENTS_DIRECTORY = "requirements"
+
+
+def requirements_file(
+    toxinidir: t.Union[str, Path],
+    envname: str,
+    requirements_directory: t.Optional[t.Union[str, Path]] = None,
+) -> Path:
+    """The environment-specific requirements file for `envname`."""
+    return Path(
+        toxinidir,
+        requirements_directory or DEFAULT_REQUIREMENTS_DIRECTORY,
+        f"{envname}.txt",
+    )
+
+
+def other_sources(root: t.Union[str, Path]) -> t.Sequence[Path]:
+    """Any other requirements files under `root` that exist."""
+    return [
+        path
+        for path in [
+            Path(root, source_file) for source_file in DIST_REQUIREMENTS_SOURCES
+        ]
+        if path.exists()
+    ]
 
 
 def tox_add_argument(parser: ToxParser) -> None:

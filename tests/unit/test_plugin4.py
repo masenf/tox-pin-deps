@@ -119,7 +119,7 @@ def test_install(
         venv.execute.assert_not_called()
     elif pip_compile:
         if env_requirements is None:
-            env_requirements = tox_pin_deps.requirements_file(
+            env_requirements = tox_pin_deps.common.requirements_file(
                 toxinidir=toxinidir,
                 envname=venv_name,
             )
@@ -193,7 +193,7 @@ def test_install_will_install(
     assert cmd[2:start_idx] == exp_files
     for path_should_exist in cmd[2:start_idx]:
         assert Path(path_should_exist).exists()
-    env_requirements = tox_pin_deps.requirements_file(
+    env_requirements = tox_pin_deps.common.requirements_file(
         toxinidir=toxinidir,
         envname=venv_name,
     )

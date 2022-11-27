@@ -7,6 +7,7 @@ import pytest
 from . import tox_mocks
 
 with tox_mocks.MockTox3Context():
+    import tox_pin_deps.common
     import tox_pin_deps.plugin
 
 
@@ -156,7 +157,7 @@ def test_tox_testenv_install_deps(
     elif pip_compile:
         venv.get_resolved_dependencies.assert_called_once()
         if env_requirements is None:
-            env_requirements = tox_pin_deps.requirements_file(
+            env_requirements = tox_pin_deps.common.requirements_file(
                 toxinidir=venv.envconfig.config.toxinidir,
                 envname=venv.envconfig.envname,
             )
@@ -211,7 +212,7 @@ def test_tox_testenv_install_deps_will_install(
     assert cmd[2:start_idx] == exp_files
     for path_should_exist in cmd[2:start_idx]:
         assert Path(path_should_exist).exists()
-    env_requirements = tox_pin_deps.requirements_file(
+    env_requirements = tox_pin_deps.common.requirements_file(
         toxinidir=venv.envconfig.config.toxinidir,
         envname=venv.envconfig.envname,
     )

@@ -7,12 +7,22 @@ import shlex
 import tempfile
 import typing as t
 
-from . import (
-    ENV_PIP_COMPILE_OPTS,
-    custom_command,
+from .common import (
     requirements_file,
     other_sources,
 )
+
+
+ENV_PIP_COMPILE_OPTS = "PIP_COMPILE_OPTS"
+CUSTOM_COMPILE_COMMAND = "tox -e {envname} --pip-compile"
+
+
+def custom_command(envname: str, pip_compile_opts: t.Optional[str] = None) -> str:
+    """The custom command to include in pip-compile output header."""
+    cmd = CUSTOM_COMPILE_COMMAND.format(envname=envname)
+    if pip_compile_opts:
+        cmd += f" --pip-compile-opts {shlex.quote(pip_compile_opts)}"
+    return cmd
 
 
 class PipCompile(abc.ABC):
