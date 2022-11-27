@@ -47,10 +47,8 @@ class PipCompileInstaller(PipCompile, Pip):
         return None
 
     @staticmethod
-    def _deps(arguments: t.Any) -> t.Sequence[str]:
-        if not isinstance(arguments, t.Sequence):
-            arguments = [arguments]
-        return [line for pydeps in arguments for line in pydeps.lines()]
+    def _deps(pydeps: PythonDeps) -> t.Sequence[str]:
+        return pydeps.lines()
 
     def execute(
         self,
