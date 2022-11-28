@@ -28,7 +28,9 @@ def dumb_pypi_repo(pkg_path: Path):
     package_json.write_text("\n".join(packages))
     subprocess.run(
         [
-            "dumb-pypi",
+            sys.executable,
+            "-m",
+            "dumb_pypi.main",
             "--package-list-json",
             str(package_json),
             "--packages-url",
@@ -80,7 +82,7 @@ def mock_pyproject_toml_package(name, version, install_requires, dest):
     pyproject_toml.write_text(
         f"""
 [build-system]
-requires = ["setuptools >= 40.0.4", "wheel >= 0.29.0", "setuptools_scm[toml]>=3.4"]
+requires = ["setuptools >= 40.0.4", "wheel >= 0.29.0"]
 build-backend = 'setuptools.build_meta'
 
 [project]
@@ -92,9 +94,10 @@ version = {version!r}
     return pyproject_toml
 
 
-def wheel(project_dir, package_dir):
+def wheel(project_dir, package_dir, isolation=True):
     return subprocess.run(
-        [sys.executable, "-m", "build", "--outdir", str(package_dir), "--no-isolation"],
+        [sys.executable, "-m", "build", "--outdir", str(package_dir)]
+        + (["--no-isolation"] if not isolation else []),
         cwd=project_dir,
         capture_output=True,
         check=True,

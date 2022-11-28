@@ -1,12 +1,107 @@
 """Module-scope fixtures for testing real tox"""
 import os
 from pathlib import Path
+import random
 import shutil
 import subprocess
 import sys
 import uuid
 
 import pytest
+
+from . import mock_packages
+
+
+@pytest.fixture(scope="session")
+def pkg_path(tmp_path_factory):
+    return tmp_path_factory.mktemp("packages")
+
+
+def mock_package_maker(
+    pkg_name,
+    versions,
+    tmp_path_factory,
+    pkg_path,
+    install_requires=None,
+    mock_package_func=mock_packages.mock_setup_py_package,
+    isolation=False,
+):
+    project_path = tmp_path_factory.mktemp(pkg_name)
+    for version in versions:
+        mock_package_func(pkg_name, version, install_requires or [], project_path)
+        mock_packages.wheel(project_path, pkg_path, isolation=isolation)
+    return pkg_name, dict(
+        versions=versions,
+        project_path=project_path,
+    )
+
+
+@pytest.fixture(scope="session")
+def mock_pkg_foo(tmp_path_factory, pkg_path):
+    pkg_name = "mock_pkg_foo"
+    versions = ["0.0.1", "0.1.0", "1.0b2"]
+    return mock_package_maker(pkg_name, versions, tmp_path_factory, pkg_path)
+
+
+@pytest.fixture(scope="session")
+def mock_pkg_bar(tmp_path_factory, pkg_path, mock_pkg_foo):
+    pkg_name = "mock_pkg_bar"
+    versions = ["0.1.1", "1.1.0", "1.2", "1.5"]
+    return mock_package_maker(
+        pkg_name,
+        versions,
+        tmp_path_factory,
+        pkg_path,
+        install_requires=[mock_pkg_foo[0]],
+    )
+
+
+@pytest.fixture(scope="session")
+def mock_pkg_quuc(tmp_path_factory, pkg_path, mock_pkg_bar):
+    pkg_name = "mock_pkg_quuc"
+    versions = ["2.1.1", "2.0", "2.2", "2.1.0"]
+    return mock_package_maker(
+        pkg_name,
+        versions,
+        tmp_path_factory,
+        pkg_path,
+        install_requires=[mock_pkg_bar[0]],
+        mock_package_func=mock_packages.mock_pyproject_toml_package,
+    )
+
+
+@pytest.fixture(scope="session")
+def all_mock_packages(mock_pkg_foo, mock_pkg_bar, mock_pkg_quuc):
+    return dict([mock_pkg_foo, mock_pkg_bar, mock_pkg_quuc])
+
+
+@pytest.fixture(scope="session")
+def package_server_port():
+    return 8080 + random.randint(1, 512)
+
+
+@pytest.fixture(scope="session")
+def save_pip_vars():
+    save = {
+        v: os.environ.get(v)
+        for v in ["PIP_INDEX_URL", "PIP_EXTRA_INDEX_URL", "PIP_TRUSTED_HOST"]
+    }
+    yield
+    for var, val in save.items():
+        if val is not None:
+            os.environ[var] = val
+
+
+@pytest.fixture(scope="session")
+def package_server(package_server_port, pkg_path, all_mock_packages, save_pip_vars):
+    http_server = mock_packages.dumb_pypi_server(pkg_path, package_server_port)
+    host = "localhost"
+    index = f"http://{host}:{package_server_port}/index/simple"
+    # os.environ["PIP_INDEX_URL"] = index
+    os.environ["PIP_EXTRA_INDEX_URL"] = index
+    os.environ["PIP_TRUSTED_HOST"] = host
+    yield index
+    http_server.terminate()
 
 
 @pytest.fixture(scope="module")
@@ -23,8 +118,23 @@ def mod_id():
     ],
     ids=["examples/env-pins", "examples/pyproject-toml-pkg", "examples/setup-py-pkg"],
 )
-def example_environment_root(request):
+def _example_environment_root(request):
     return Path(Path(__file__).resolve().parent.parent.parent, *request.param)
+
+
+@pytest.fixture(
+    scope="module",
+    params=[
+        pytest.param(("examples", "skipsdist"), id="examples/skipsdist"),
+        pytest.param(
+            ("examples", "pyproj"),
+            id="examples/pyproj",
+            marks=[pytest.mark.skip("nodeps does NOT find transitives")],
+        ),
+    ],
+)
+def example_environment_root(request, package_server):
+    return Path(Path(__file__).resolve().parent, *request.param)
 
 
 @pytest.fixture(
@@ -78,7 +188,7 @@ def tox_venv(tmp_path_factory, mod_id, tox_version):
 @pytest.fixture(scope="module")
 def tox_testenv_passenv_all():
     orig_tox_testenv_passenv = os.environ.get("TOX_TESTENV_PASSENV")
-    os.environ["TOX_TESTENV_PASSENV"] = "*"  # for coverage.py
+    os.environ["TOX_TESTENV_PASSENV"] = "COV* PIP*"  # for coverage.py
     yield
     if orig_tox_testenv_passenv is not None:
         # monkeypatch doesn't work at module scope
@@ -138,9 +248,16 @@ def tox_run(tox_venv_python, link_tox_pin_deps, toxinidir):
 
 
 @pytest.fixture(scope="module")
-def pip_compile_tox_run(tox_venv_python, link_tox_pin_deps, toxinidir):
+def pip_compile_tox_run(tox_venv_python, link_tox_pin_deps, toxinidir, package_server):
     return subprocess.run(
-        [tox_venv_python, "-m", "tox", "--pip-compile"],
+        [
+            tox_venv_python,
+            "-m",
+            "tox",
+            "--pip-compile",
+            "--pip-compile-opts",
+            f" --extra-index-url {package_server}",
+        ],
         cwd=toxinidir,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -153,6 +270,30 @@ def pip_compile_tox_run(tox_venv_python, link_tox_pin_deps, toxinidir):
 def ignore_pins_tox_run(tox_venv_python, link_tox_pin_deps, toxinidir):
     return subprocess.run(
         [tox_venv_python, "-m", "tox", "--ignore-pins"],
+        cwd=toxinidir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+        check=True,
+    )
+
+
+@pytest.fixture(scope="module")
+def tox_run_recreate(tox_venv_python, link_tox_pin_deps, toxinidir):
+    return subprocess.run(
+        [tox_venv_python, "-m", "tox", "--recreate"],
+        cwd=toxinidir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+        check=True,
+    )
+
+
+@pytest.fixture(scope="module")
+def tox_run_3(tox_venv_python, link_tox_pin_deps, toxinidir):
+    return subprocess.run(
+        [tox_venv_python, "-m", "tox"],
         cwd=toxinidir,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
