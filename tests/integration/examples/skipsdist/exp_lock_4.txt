@@ -1,0 +1,12 @@
+~refoo: install_deps> python -I -m pip install -r /.*/requirements/foo\.txt
+foo: commands[0]> pip freeze
+mock-pkg-foo==0.1.0
+~rebar: install_deps> python -I -m pip install -r /.*/requirements/bar\.txt
+bar: commands[0]> pip freeze
+mock-pkg-bar==1.5
+mock-pkg-foo==0.1.0
+~requuc: install_deps> python -I -m pip install -r /.*/requirements/quuc\.txt
+quuc: commands[0]> pip freeze
+mock-pkg-bar==1.5
+mock-pkg-foo==0.0.1
+mock-pkg-quuc==2.1.1

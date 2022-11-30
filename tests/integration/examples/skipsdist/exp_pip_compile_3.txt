@@ -1,0 +1,24 @@
+foo tox-pin-deps: ['pip', 'install', 'pip-tools']
+~refoo tox-pin-deps: \['pip-compile', '/.*/\.tox-pin-deps-foo-requirements\..*\.in', '--output-file', '.*/requirements/foo\.txt', '--extra-index-url'
+~refoo installdeps: -r/.*/requirements/foo\.txt
+foo installed:
+foo run-test: commands[0] | pip freeze
+mock-pkg-foo==0.1.0
+pip-tools==
+bar tox-pin-deps: ['pip', 'install', 'pip-tools']
+~rebar tox-pin-deps: \['pip-compile', '/.*/\.tox-pin-deps-bar-requirements\..*\.in', '--output-file', '.*/requirements/bar\.txt', '--extra-index-url'
+~rebar installdeps: -r/.*/requirements/bar\.txt
+bar installed:
+bar run-test: commands[0] | pip freeze
+mock-pkg-bar==1.5
+mock-pkg-foo==0.1.0
+pip-tools==
+quuc tox-pin-deps: ['pip', 'install', 'pip-tools']
+~requuc tox-pin-deps: \['pip-compile', '/.*/\.tox-pin-deps-quuc-requirements\..*\.in', '--output-file', '.*/requirements/quuc\.txt', '--extra-index-url'
+~requuc installdeps: -r/.*/requirements/quuc\.txt
+quuc installed:
+quuc run-test: commands[0] | pip freeze
+mock-pkg-bar==1.5
+mock-pkg-foo==0.0.1
+mock-pkg-quuc==2.1.1
+pip-tools==

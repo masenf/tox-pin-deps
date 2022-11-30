@@ -1,0 +1,24 @@
+foo: tox-pin-deps> pip install pip-tools
+~refoo: tox-pin-deps> pip-compile /.*/\.tox-pin-deps-foo-requirements\..*\.in --output-file /.*/requirements/foo.txt --extra-index-url
+foo: recreate env
+~refoo: install_deps> python -I -m pip install -r /.*/requirements/foo\.txt
+foo: commands[0]> pip freeze
+mock-pkg-foo==0.1.0
+pip-tools==
+bar: tox-pin-deps> pip install pip-tools
+~rebar: tox-pin-deps> pip-compile /.*/\.tox-pin-deps-bar-requirements\..*\.in --output-file /.*/requirements/bar.txt --extra-index-url
+bar: recreate env
+~rebar: install_deps> python -I -m pip install -r /.*/requirements/bar\.txt
+bar: commands[0]> pip freeze
+mock-pkg-bar==1.5
+mock-pkg-foo==0.1.0
+pip-tools==
+quuc: tox-pin-deps> pip install pip-tools
+~requuc: tox-pin-deps> pip-compile /.*/\.tox-pin-deps-quuc-requirements\..*\.in --output-file /.*/requirements/quuc.txt --extra-index-url
+quuc: recreate env
+~requuc: install_deps> python -I -m pip install -r /.*/requirements/quuc\.txt
+quuc: commands[0]> pip freeze
+mock-pkg-bar==1.5
+mock-pkg-foo==0.0.1
+mock-pkg-quuc==2.1.1
+pip-tools==

@@ -1,15 +1,20 @@
 """Module-scope fixtures for testing real tox"""
+import logging
 import os
 from pathlib import Path
 import random
+import re
 import shutil
 import subprocess
 import sys
 import uuid
+import warnings
 
 import pytest
 
 from . import mock_packages
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="session")
@@ -125,16 +130,21 @@ def _example_environment_root(request):
 @pytest.fixture(
     scope="module",
     params=[
-        pytest.param(("examples", "skipsdist"), id="examples/skipsdist"),
+        "examples/skipsdist",
         pytest.param(
-            ("examples", "pyproj"),
-            id="examples/pyproj",
+            "examples/pyproj",
             marks=[pytest.mark.skip("nodeps does NOT find transitives")],
         ),
     ],
 )
-def example_environment_root(request, package_server):
-    return Path(Path(__file__).resolve().parent, *request.param)
+def example_project_name(request):
+    return request.param
+
+
+@pytest.fixture(scope="module")
+def example_environment_root(example_project_name, package_server):
+    p = example_project_name.split("/")
+    return Path(Path(__file__).resolve().parent, *p)
 
 
 @pytest.fixture(
@@ -146,9 +156,14 @@ def tox_version(request):
 
 
 @pytest.fixture(scope="module")
-def toxinidir(tmp_path_factory, mod_id, example_environment_root):
+def tox_major(tox_version):
+    return "4" if "4" in tox_version else "3"
+
+
+@pytest.fixture(scope="module")
+def toxinidir(tmp_path_factory, mod_id, tox_version, example_environment_root):
     """Copy the example environment to tmp_path."""
-    project_dir = tmp_path_factory.mktemp(f"examples_{mod_id}")
+    project_dir = tmp_path_factory.mktemp(f"examples_{mod_id}_{tox_version}")
     toxinidir = project_dir / example_environment_root.name
     shutil.copytree(
         example_environment_root,
@@ -236,67 +251,91 @@ def link_tox_pin_deps(tox_venv, tox_venv_site_packages_dir):
 
 
 @pytest.fixture(scope="module")
-def tox_run(tox_venv_python, link_tox_pin_deps, toxinidir):
-    return subprocess.run(
-        [tox_venv_python, "-m", "tox"],
-        cwd=toxinidir,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        encoding="utf-8",
-        check=True,
+def tox_runner(tox_venv_python, link_tox_pin_deps, toxinidir):
+    def run_tox_cmd(*args):
+        return subprocess.run(
+            [tox_venv_python, "-m", "tox", *args],
+            cwd=toxinidir,
+            capture_output=True,
+            encoding="utf-8",
+            check=True,
+        )
+
+    return run_tox_cmd
+
+
+@pytest.fixture(scope="module")
+def tox_run(tox_runner):
+    return tox_runner()
+
+
+@pytest.fixture(scope="module")
+def pip_compile_tox_run(tox_runner, package_server):
+    return tox_runner(
+        "--pip-compile",
+        "--pip-compile-opts",
+        f" --extra-index-url {package_server}",
     )
 
 
 @pytest.fixture(scope="module")
-def pip_compile_tox_run(tox_venv_python, link_tox_pin_deps, toxinidir, package_server):
-    return subprocess.run(
-        [
-            tox_venv_python,
-            "-m",
-            "tox",
-            "--pip-compile",
-            "--pip-compile-opts",
-            f" --extra-index-url {package_server}",
-        ],
-        cwd=toxinidir,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        encoding="utf-8",
-        check=True,
-    )
+def ignore_pins_tox_run(tox_runner):
+    return tox_runner("--ignore-pins")
 
 
 @pytest.fixture(scope="module")
-def ignore_pins_tox_run(tox_venv_python, link_tox_pin_deps, toxinidir):
-    return subprocess.run(
-        [tox_venv_python, "-m", "tox", "--ignore-pins"],
-        cwd=toxinidir,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        encoding="utf-8",
-        check=True,
-    )
+def tox_run_recreate(tox_runner):
+    return tox_runner("--recreate")
 
 
 @pytest.fixture(scope="module")
-def tox_run_recreate(tox_venv_python, link_tox_pin_deps, toxinidir):
-    return subprocess.run(
-        [tox_venv_python, "-m", "tox", "--recreate"],
-        cwd=toxinidir,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        encoding="utf-8",
-        check=True,
-    )
+def tox_run_3(tox_runner):
+    return tox_runner()
 
 
-@pytest.fixture(scope="module")
-def tox_run_3(tox_venv_python, link_tox_pin_deps, toxinidir):
-    return subprocess.run(
-        [tox_venv_python, "-m", "tox"],
-        cwd=toxinidir,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        encoding="utf-8",
-        check=True,
-    )
+def assert_output_ordered(output, exp_output):
+    output_lines = output.splitlines()
+    last_line = 0
+    for needle in exp_output:
+        for ix, line in enumerate(output_lines[last_line:]):
+            if hasattr(needle, "match"):
+                if needle.match(line):
+                    break
+            elif line.startswith(needle):
+                break
+        else:
+            raise AssertionError(
+                f"Remains unmatched: {needle!r} in {output_lines[last_line:]!r}"
+            )
+        last_line += ix + 1
+        logger.debug(f"Matched {needle!r} on line {last_line}")
+
+
+def get_exp_output(path):
+    if not path.exists():
+        warnings.warn(f"No validation for {path}")
+        return []
+    return [
+        re.compile(line[3:]) if line.startswith("~re") else line
+        for line in path.read_text().splitlines()
+    ]
+
+
+@pytest.fixture
+def exp_no_lock(tox_major, example_environment_root):
+    return get_exp_output(example_environment_root / f"exp_no_lock_{tox_major}.txt")
+
+
+@pytest.fixture
+def exp_lock(tox_major, example_environment_root):
+    return get_exp_output(example_environment_root / f"exp_lock_{tox_major}.txt")
+
+
+@pytest.fixture
+def exp_pip_compile(tox_major, example_environment_root):
+    return get_exp_output(example_environment_root / f"exp_pip_compile_{tox_major}.txt")
+
+
+@pytest.fixture
+def exp_reuse(tox_major, example_environment_root):
+    return get_exp_output(example_environment_root / f"exp_reuse_{tox_major}.txt")
