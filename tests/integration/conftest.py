@@ -131,10 +131,7 @@ def _example_environment_root(request):
     scope="module",
     params=[
         "examples/skipsdist",
-        pytest.param(
-            "examples/pyproj",
-            marks=[pytest.mark.skip("nodeps does NOT find transitives")],
-        ),
+        "examples/pyproj",
     ],
 )
 def example_project_name(request):
