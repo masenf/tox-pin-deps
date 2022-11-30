@@ -1,9 +1,14 @@
+import logging
 from hashlib import sha256
 import json
 from itertools import chain
+import logging
 from pathlib import Path
 import subprocess
 import sys
+
+
+logger = logging.getLogger(__name__)
 
 
 def pypi_sha_hash(package_file: Path):
@@ -26,6 +31,10 @@ def dumb_pypi_repo(pkg_path: Path):
         )
     package_json = pkg_path / "packages.json"
     package_json.write_text("\n".join(packages))
+    output_dir = pkg_path / "index"
+    logger.info(
+        f"Creating dumb-pypi repo at {output_dir} with {len(packages)} entries."
+    )
     subprocess.run(
         [
             sys.executable,
@@ -60,6 +69,7 @@ def dumb_pypi_server(pkg_path, port=None):
 
 def mock_setup_py_package(name, version, install_requires, dest):
     """Create a mock setup.py package and build a wheel from it."""
+    logger.debug(f"Create mock setup.py package '{name}-{version}'")
     dest.mkdir(parents=True, exist_ok=True)
     setup_py = dest / "setup.py"
     setup_py.write_text(
@@ -77,6 +87,7 @@ setup(
 
 def mock_pyproject_toml_package(name, version, install_requires, dest):
     """Create a mock setup.py package and build a wheel from it."""
+    logger.debug(f"Create mock pyproject.toml package '{name}-{version}'")
     dest.mkdir(parents=True, exist_ok=True)
     pyproject_toml = dest / "pyproject.toml"
     pyproject_toml.write_text(
@@ -95,6 +106,7 @@ version = {version!r}
 
 
 def wheel(project_dir, package_dir, isolation=True):
+    logger.info(f"Building wheel for {project_dir} -> {package_dir}")
     return subprocess.run(
         [sys.executable, "-m", "build", "--outdir", str(package_dir)]
         + (["--no-isolation"] if not isolation else []),
