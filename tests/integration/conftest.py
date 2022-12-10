@@ -107,19 +107,6 @@ def mod_id():
 @pytest.fixture(
     scope="module",
     params=[
-        ("examples", "env-pins"),
-        ("examples", "pyproject-toml-pkg"),
-        ("examples", "setup-py-pkg"),
-    ],
-    ids=["examples/env-pins", "examples/pyproject-toml-pkg", "examples/setup-py-pkg"],
-)
-def _example_environment_root(request):
-    return Path(Path(__file__).resolve().parent.parent.parent, *request.param)
-
-
-@pytest.fixture(
-    scope="module",
-    params=[
         "examples/skipsdist",
         "examples/pyproj",
     ],
