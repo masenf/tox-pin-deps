@@ -81,6 +81,12 @@ class PipCompile(abc.ABC):
         """CLI options string from [testenv] pip_compile_opts key."""
         raise NotImplementedError
 
+    @property
+    @abc.abstractmethod
+    def env_pip_pre(self) -> bool:  # pragma: no cover
+        """[testenv] pip_pre value."""
+        raise NotImplementedError
+
     @abc.abstractmethod
     def execute(
         self,
@@ -164,6 +170,8 @@ class PipCompile(abc.ABC):
             run_id="tox-pin-deps",
         )
         cmd = ["pip-compile"]
+        if self.env_pip_pre:
+            cmd.append("--pre")
         opts = [str(s) for s in self.other_sources] + [
             "--output-file",
             str(self.env_requirements),
