@@ -136,7 +136,7 @@ def example_environment_root(example_project_name, package_server):
 
 @pytest.fixture(
     scope="module",
-    params=["tox==3.27.1", "tox==4.0.0b2"],
+    params=["tox==3.27.1", "tox==4.0.5"],
 )
 def tox_version(request):
     return request.param
@@ -170,9 +170,6 @@ def tox_venv(tmp_path_factory, mod_id, tox_version):
     import pkg_resources
 
     pytest_cov_dist = pkg_resources.get_distribution("pytest-cov")
-    if "==4" in tox_version:
-        # XXX: until a tox4 release includes my hashes fix, install from a local checkout
-        tox_version = Path(__file__).parent.parent.parent.parent / "tox-rewrite"
     subprocess.run(
         [
             tox_venv_path / "bin" / "python",
