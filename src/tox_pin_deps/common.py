@@ -55,7 +55,7 @@ def tox_add_argument(parser: ToxParser) -> None:
     parser.add_argument(
         "--pip-compile-opts",
         action="store",
-        default="",
+        default="--upgrade",
         help=(
             "Custom options passed to `pip-compile` when --pip-compile is used. "
             "Also specify via environment variable PIP_COMPILE_OPTS."
