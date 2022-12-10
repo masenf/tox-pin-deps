@@ -1,0 +1,15 @@
+foo installdeps: mock_pkg_foo < 1
+foo installed: mock-pkg-foo==0.1.0
+foo run-test: commands[0] | pip freeze
+mock-pkg-foo==0.1.0
+bar installdeps: mock_pkg_foo < 1, mock_pkg_bar
+bar installed: mock-pkg-bar==1.5,mock-pkg-foo==0.1.0
+bar run-test: commands[0] | pip freeze
+mock-pkg-bar==1.5
+mock-pkg-foo==0.1.0
+quuc installdeps: mock_pkg_quuc < 2.2, mock_pkg_foo < 0.1
+quuc installed: mock-pkg-bar==1.5,mock-pkg-foo==0.0.1,mock-pkg-quuc==2.1.1
+quuc run-test: commands[0] | pip freeze
+mock-pkg-bar==1.5
+mock-pkg-foo==0.0.1
+mock-pkg-quuc==2.1.1

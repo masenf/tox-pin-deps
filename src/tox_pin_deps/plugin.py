@@ -1,63 +1,79 @@
-import os
+"""Tox 3 implementation."""
+from argparse import Namespace
 from pathlib import Path
-import shlex
-import tempfile
+import typing as t
 
-from tox import hookimpl
-from tox.config import DepConfig
+from tox import hookimpl  # type: ignore
+from tox.action import Action  # type: ignore
+from tox.config import Config, DepConfig, Parser  # type: ignore
+from tox.venv import VirtualEnv  # type: ignore
 
-ENV_PIP_COMPILE_OPTS = "PIP_COMPILE_OPTS"
-CUSTOM_COMPILE_COMMAND = "tox -e {envname} --pip-compile"
-DIST_REQUIREMENTS_SOURCES = ["pyproject.toml", "setup.cfg", "setup.py"]
-
-
-def _requirements_file(envconfig):
-    return Path(
-        envconfig.config.toxinidir,
-        "requirements",
-        f"{envconfig.envname}.txt",
-    )
+from .common import requirements_file, tox_add_argument
+from .compile import PipCompile
 
 
-def _other_sources(envconfig):
-    if envconfig.skip_install or envconfig.config.skipsdist:
-        return []
-    return [
-        path
-        for path in [
-            Path(envconfig.config.toxinidir, source_file)
-            for source_file in DIST_REQUIREMENTS_SOURCES
-        ]
-        if path.exists()
-    ]
+class ShimBase:
+    def __init__(self, *args: t.Any, **kwargs: t.Any):
+        """allow the constructor to ignore arbitrary args"""
 
 
-@hookimpl
-def tox_addoption(parser):
-    parser.add_argument(
-        "--pip-compile",
-        action="store_true",
-        default=False,
-        help=(
-            "Run `pip-compile` on the deps, and copy the result to "
-            "{toxinidir}/requirements/{envname}.txt"
-        ),
-    )
-    parser.add_argument(
-        "--ignore-pins",
-        action="store_true",
-        default=False,
-        help="Do not replace deps with `requirements` files",
-    )
-    parser.add_argument(
-        "--pip-compile-opts",
-        action="store",
-        default=None,
-        help=(
-            "Custom options passed to `pip-compile` when --pip-compile is used. "
-            "Also specify via environment variable PIP_COMPILE_OPTS."
-        ),
-    )
+class PipCompileTox3(PipCompile, ShimBase):
+    """Tox 3-specific implementation of PipCompile."""
+
+    def __init__(self, venv: VirtualEnv, action: Action):
+        self.action = action
+        super().__init__(venv)
+
+    @property
+    def toxinidir(self) -> Path:
+        return Path(self.venv.envconfig.config.toxinidir)
+
+    @property
+    def skipsdist(self) -> bool:
+        return bool(self.venv.envconfig.skip_install) or bool(
+            self.venv.envconfig.config.skipsdist
+        )
+
+    @property
+    def envname(self) -> str:
+        return str(self.venv.envconfig.envname)
+
+    @property
+    def options(self) -> Namespace:
+        return t.cast(Namespace, self.venv.envconfig.config.option)
+
+    @property
+    def env_pip_compile_opts_env(self) -> t.Optional[str]:
+        if self.venv.envconfig.pip_compile_opts:
+            return str(self.venv.envconfig.pip_compile_opts)
+        return None
+
+    def execute(
+        self,
+        cmd: t.Sequence[str],
+        run_id: str,
+        env: t.Optional[t.Dict[str, str]] = None,
+    ) -> None:
+        self.action.setactivity(run_id, str(cmd))
+        self.venv._pcall(
+            cmd,
+            cwd=self.venv.path,
+            action=self.action,
+            env=env,
+        )
+
+
+def _deps(venv: VirtualEnv) -> t.Sequence[DepConfig]:
+    try:
+        return t.cast(t.Sequence[DepConfig], venv.get_resolved_dependencies())
+    except AttributeError:  # pragma: no cover
+        # _getresolvedeps was deprecated on tox 3.7.0 in favor of get_resolved_dependencies
+        return t.cast(t.Sequence[DepConfig], venv._getresolvedeps())
+
+
+@hookimpl  # type: ignore
+def tox_addoption(parser: Parser) -> None:
+    tox_add_argument(parser)
     parser.add_testenv_attribute(
         "pip_compile_opts",
         type="string",
@@ -66,33 +82,18 @@ def tox_addoption(parser):
     )
 
 
-def _deps(venv):
-    try:
-        return venv.get_resolved_dependencies()
-    except AttributeError:  # pragma: no cover
-        # _getresolvedeps was deprecated on tox 3.7.0 in favor of get_resolved_dependencies
-        return venv._getresolvedeps()
+@hookimpl  # type: ignore
+def tox_configure(config: Config) -> None:
+    """
+    Update envconfigs early if env-specific requirements exist.
 
+    Force `--recreate` when `--pip-compile` is specified.
 
-def _custom_command(venv):
-    cmd = CUSTOM_COMPILE_COMMAND.format(envname=venv.envconfig.envname)
-    pip_compile_opts_cli = venv.envconfig.config.option.pip_compile_opts
-    if pip_compile_opts_cli:
-        cmd += f" --pip-compile-opts {shlex.quote(pip_compile_opts_cli)}"
-    return cmd
-
-
-def _opts(venv):
-    sources = [
-        venv.envconfig.pip_compile_opts,
-        venv.envconfig.config.option.pip_compile_opts,
-        os.environ.get(ENV_PIP_COMPILE_OPTS),
-    ]
-    return [opt for source in sources for opt in shlex.split(source or "")]
-
-
-@hookimpl
-def tox_configure(config):
+    Note: this is tox3-only functionality!
+        In tox4, the virtualenv re-usability check is more robust,
+        allowing for just-in-time replacement of deps without
+        triggering environment recreation (as long as the deps match).
+    """
     if config.option.ignore_pins:
         return
     for envconfig in (
@@ -105,47 +106,26 @@ def tox_configure(config):
             envconfig.recreate = True
         else:
             # normal mode: use per-env lock file, if it exists
-            env_requirements = _requirements_file(envconfig)
+            env_requirements = requirements_file(
+                toxinidir=config.toxinidir,
+                envname=envconfig.envname,
+            )
             if env_requirements.exists():
                 envconfig.deps = [DepConfig(f"-r{env_requirements}")]
 
 
-@hookimpl
-def tox_testenv_install_deps(venv, action):
-    g_config = venv.envconfig.config
-    if g_config.option.ignore_pins:
+@hookimpl  # type: ignore
+def tox_testenv_install_deps(venv: VirtualEnv, action: Action) -> None:
+    """
+    tox3 entry point: install deps.
+
+    Always returns `None`, so that the default pip install_deps logic will
+    run using the new `deps` updated by this plugin.
+    """
+    pct3 = PipCompileTox3(venv, action)
+    if pct3.ignore_pins:
         return
-    if venv.envconfig.envname.startswith("."):
-        return
-    deps = _deps(venv)
-    if g_config.option.pip_compile and deps:
-        action.setactivity("installdeps", "pip-tools")
-        venv._pcall(
-            ["pip", "install", "pip-tools"],
-            cwd=venv.path,
-            action=action,
-        )
-        env_requirements = _requirements_file(venv.envconfig)
-        opts = [str(s) for s in _other_sources(venv.envconfig)] + [
-            "--output-file",
-            str(env_requirements),
-            *_opts(venv),
-        ]
-        action.setactivity("pip-compile", str(opts))
-        env_requirements.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(
-            prefix=f".tox-pin-deps-{venv.envconfig.envname}-requirements.",
-            suffix=".in",
-            dir=g_config.toxinidir,
-        ) as tf:
-            tf.write("\n".join(str(d) for d in deps).encode())
-            tf.flush()
-            venv._pcall(
-                ["pip-compile", tf.name] + opts,
-                cwd=venv.path,
-                action=action,
-                env={"CUSTOM_COMPILE_COMMAND": _custom_command(venv)},
-            )
-            # replace environment deps with the new lock file
-            venv.envconfig.deps = [DepConfig(f"-r{env_requirements}")]
+    pinned_deps_spec = pct3.pip_compile(deps=[str(d) for d in _deps(venv) or []])
+    if pinned_deps_spec:
+        venv.envconfig.deps = [DepConfig(pinned_deps_spec)]
     return None  # let the next plugin run

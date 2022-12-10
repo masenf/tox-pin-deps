@@ -12,9 +12,6 @@ description = "A tox plugin for pinning dependencies."
 authors = [
     {name = "Masen Furer", email = "m_github@0x26.net"},
 ]
-dependencies = [
-    'tox',
-]
 requires-python = ">=3.7"
 license = {file = "LICENSE"}
 classifiers = [
@@ -32,7 +29,7 @@ classifiers = [
 dynamic = ["version", "readme"]
 
 [project.entry-points.tox]
-pin_deps = "tox_pin_deps.plugin"
+pin_deps = "tox_pin_deps.loader"
 
 [project.urls]
 homepage = "https://github.com/masenf/tox-pin-deps"
