@@ -46,6 +46,11 @@ class PipCompileInstaller(PipCompile, Pip):
             return str(pip_compile_opts)
         return None
 
+    @property
+    def env_pip_pre(self) -> bool:
+        """[testenv] pip_pre value."""
+        return bool(self.venv.conf["pip_pre"])
+
     @staticmethod
     def _deps(pydeps: PythonDeps) -> t.Sequence[str]:
         return pydeps.lines()

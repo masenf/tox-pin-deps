@@ -48,6 +48,11 @@ class PipCompileTox3(PipCompile, ShimBase):
             return str(self.venv.envconfig.pip_compile_opts)
         return None
 
+    @property
+    def env_pip_pre(self) -> bool:
+        """[testenv] pip_pre value."""
+        return bool(self.venv.envconfig.pip_pre)
+
     def execute(
         self,
         cmd: t.Sequence[str],
