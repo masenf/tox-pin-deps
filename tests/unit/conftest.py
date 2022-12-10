@@ -116,6 +116,11 @@ def skip_install(request):
     return request.param
 
 
+@pytest.fixture(params=[True, False], ids=["pip_pre", "no_pip_pre"])
+def pip_pre(request):
+    return request.param
+
+
 @pytest.fixture(params=[True, False], ids=["setup.py", "no_setup.py"])
 def setup_py(request, toxinidir):
     if request.param:

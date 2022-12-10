@@ -25,7 +25,7 @@ def options(options):
 @pytest.fixture
 def conf():
     """tox4 per-testenv config."""
-    return dict(pip_compile_opts=None, skip_install=False)
+    return dict(pip_compile_opts=None, skip_install=False, pip_pre=False)
 
 
 @pytest.fixture
@@ -100,6 +100,12 @@ def skip_install(skip_install, conf):
     return skip_install
 
 
+@pytest.fixture
+def pip_pre(pip_pre, conf):
+    conf["pip_pre"] = pip_pre
+    return pip_pre
+
+
 def test_install(
     toxinidir,
     venv_name,
@@ -161,6 +167,7 @@ def test_install_will_install(
     venv,
     venv_name,
     toxinidir,
+    pip_pre,
     pip_compile_opts_env,
     pip_compile_opts_cli,
     pip_compile_opts_testenv,
@@ -179,9 +186,13 @@ def test_install_will_install(
     assert venv.execute.mock_calls[0][2]["cmd"] == ["pip", "install", "pip-tools"]
     cmd = venv.execute.mock_calls[1][2]["cmd"]
     assert cmd[0] == "pip-compile"
+    exp_files_idx = 2  # file names start at this index
+    if pip_pre:
+        assert cmd[1] == "--pre"
+        exp_files_idx += 1
+    exp_files = []
     # not mocking tempfile at this time
     # assert cmd[1] == tf.name
-    exp_files = []
     if not skipsdist and not skip_install:
         if pyproject_toml:
             exp_files.append(str(pyproject_toml))
@@ -190,8 +201,8 @@ def test_install_will_install(
         if setup_py:
             exp_files.append(str(setup_py))
     start_idx = cmd.index("--output-file")
-    assert cmd[2:start_idx] == exp_files
-    for path_should_exist in cmd[2:start_idx]:
+    assert cmd[exp_files_idx:start_idx] == exp_files
+    for path_should_exist in cmd[exp_files_idx:start_idx]:
         assert Path(path_should_exist).exists()
     env_requirements = tox_pin_deps.common.requirements_file(
         toxinidir=toxinidir,
