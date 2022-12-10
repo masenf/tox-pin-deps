@@ -1,4 +1,3 @@
-import logging
 from hashlib import sha256
 import json
 from itertools import chain
@@ -43,28 +42,14 @@ def dumb_pypi_repo(pkg_path: Path):
             "--package-list-json",
             str(package_json),
             "--packages-url",
-            f"file://{pkg_path}",
+            "../../../",
             "--output-dir",
             str(pkg_path / "index"),
         ],
         capture_output=True,
         check=True,
     )
-
-
-def dumb_pypi_server(pkg_path, port=None):
-    """Create a dumb pypi index from the packages and serve it via HTTP."""
-    dumb_pypi_repo(pkg_path)
-    return subprocess.Popen(
-        [
-            sys.executable,
-            "-m",
-            "http.server",
-            "--directory",
-            str(pkg_path),
-            str(port or 8080),
-        ]
-    )
+    return f"file://{pkg_path}/index/simple"
 
 
 def mock_setup_py_package(name, version, install_requires, dest):

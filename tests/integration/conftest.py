@@ -2,7 +2,6 @@
 import logging
 import os
 from pathlib import Path
-import random
 import re
 import shutil
 import subprocess
@@ -81,11 +80,6 @@ def all_mock_packages(mock_pkg_foo, mock_pkg_bar, mock_pkg_quuc):
 
 
 @pytest.fixture(scope="session")
-def package_server_port():
-    return 8080 + random.randint(1, 512)
-
-
-@pytest.fixture(scope="session")
 def save_pip_vars():
     save = {
         v: os.environ.get(v)
@@ -98,15 +92,11 @@ def save_pip_vars():
 
 
 @pytest.fixture(scope="session")
-def package_server(package_server_port, pkg_path, all_mock_packages, save_pip_vars):
-    http_server = mock_packages.dumb_pypi_server(pkg_path, package_server_port)
-    host = "localhost"
-    index = f"http://{host}:{package_server_port}/index/simple"
+def package_server(pkg_path, all_mock_packages, save_pip_vars):
+    index = mock_packages.dumb_pypi_repo(pkg_path)
     # os.environ["PIP_INDEX_URL"] = index
     os.environ["PIP_EXTRA_INDEX_URL"] = index
-    os.environ["PIP_TRUSTED_HOST"] = host
     yield index
-    http_server.terminate()
 
 
 @pytest.fixture(scope="module")
