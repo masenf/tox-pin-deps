@@ -13,6 +13,8 @@ uses [jazzband/pip-tools](https://github.com/jazzband/pip-tools)' `pip-compile`
 to freeze test and project dependencies, save a lock file per-testenv, and have
 the locked deps installed, in the usual way via `pip`, on subsequent invocations.
 
+This plugin supports both tox 3 and tox 4.
+
 ## Usage
 
 1. Install `tox-pin-deps` in the same environment as `tox`.
@@ -50,6 +52,7 @@ changing project structure or requiring the use of non-standard tools.
 * `constraints.txt` with hash checking has
   had [serveral](https://github.com/pypa/pip/issues/8792) [issues](https://github.com/pypa/pip/issues/9243)
   since the 2020 pip resolver which make it unsuitable for this use.
+* `tox-constraints` does not support tox 4
 
 #### [`poetry`](https://pypi.org/project/poetry/) / [`tox-poetry`](https://pypi.org/project/tox-poetry/)
 
@@ -59,6 +62,7 @@ changing project structure or requiring the use of non-standard tools.
 * If a project isn't already using `poetry`, adopting it for the sole purpose
   of controlling and pinning dependencies constitutes a significant change to
   development and packaging workflows.
+* `tox-poetry` does not support tox 4
 
 #### [`pipenv`](https://pypi.org/project/pipenv/) / [`tox-pipenv`](https://pypi.org/project/tox-pipenv/)
 
@@ -70,13 +74,14 @@ changing project structure or requiring the use of non-standard tools.
   of controlling and pinning dependencies constitutes a significant change to
   development and packaging workflows.
 * `tox-pipenv` has behavioral edge cases that make it uncomfortable to work with.
+* `tox-pipenv` does not support tox 4
 
 #### [`pip-compile`](https://github.com/jazzband/pip-tools) (directly)
 
 * Need scripts to handle updating / re-locking deps for multiple python versions
 * Missing tox `deps` integration for locking test environments
 
-##### [`pip-compile-multi`](https://github.com/peterdemin/pip-compile-multi)
+#### [`pip-compile-multi`](https://github.com/peterdemin/pip-compile-multi)
 
 `tox-pin-deps` does essentially the same thing as `pip-compile-multi`, except using the
 environment `deps` section as the layer on top of the project's `setup.py`
