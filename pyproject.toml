@@ -32,7 +32,7 @@ dynamic = ["version", "readme"]
 pin_deps = "tox_pin_deps.loader"
 
 [project.urls]
-homepage = "https://github.com/masenf/tox-pin-deps"
+Homepage = "https://github.com/masenf/tox-pin-deps"
 
 [tool.setuptools]
 platforms = ['unix', 'linux', 'osx', 'cygwin', 'win32']
