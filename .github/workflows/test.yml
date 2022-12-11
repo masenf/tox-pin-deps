@@ -28,7 +28,7 @@ jobs:
       run: coveralls --service=github
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_FLAG_NAME: ${{ matrix.test-name }}-unit
+        COVERALLS_FLAG_NAME: unit-${{ matrix.python-version }}
         COVERALLS_PARALLEL: true
   integration:
     needs: unit
@@ -54,7 +54,7 @@ jobs:
       run: coveralls --service=github
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_FLAG_NAME: ${{ matrix.test-name }}-interation
+        COVERALLS_FLAG_NAME: integration-${{ matrix.python-version }}
         COVERALLS_PARALLEL: true
   coveralls:
     name: Indicate completion to coveralls.io
