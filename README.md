@@ -18,7 +18,7 @@ the locked deps installed, in the usual way via `pip`, on subsequent invocations
 3. Commit files under `{toxinidir}/requirements/*.txt` to version control.
 4. Subsequent runs of `tox` will install from the lock file.
 
-* Run `tox --pip-compile` at any time to re-lock dependencies based on:
+* Run `tox --pip-compile --pip-compile-opts \ --upgrade` at any time to lock updated dependencies based on:
   * `deps` named in `tox.ini` for the environment
   * Project ("dist") dependencies named in `pyproject.toml`,
     `setup.cfg`, or `setup.py`.
