@@ -1,6 +1,7 @@
 # tox-pin-deps
 
 [![main branch test status](https://github.com/masenf/tox-pin-deps/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/masenf/tox-pin-deps/actions/workflows/test.yml?query=branch%3Amain)
+[![Coverage Status](https://coveralls.io/repos/github/masenf/tox-pin-deps/badge.svg?branch=main)](https://coveralls.io/github/masenf/tox-pin-deps?branch=main)
 [![PyPI version](https://badge.fury.io/py/tox-pin-deps.svg)](https://pypi.org/project/tox-pin-deps)
 ![tox v3 + v4 support](https://img.shields.io/badge/tox-v3+v4-green)
 
