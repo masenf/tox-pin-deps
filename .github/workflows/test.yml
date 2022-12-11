@@ -58,7 +58,8 @@ jobs:
         COVERALLS_PARALLEL: true
   coveralls:
     name: Indicate completion to coveralls.io
-    needs: integration
+    if: ${{ always() }}
+    needs: [unit, integration]
     runs-on: ubuntu-latest
     container: python:3-slim
     steps:
