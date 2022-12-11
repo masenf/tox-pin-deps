@@ -1,7 +1,9 @@
 # tox-pin-deps
 
 [![main branch test status](https://github.com/masenf/tox-pin-deps/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/masenf/tox-pin-deps/actions/workflows/test.yml?query=branch%3Amain)
+[![Coverage Status](https://coveralls.io/repos/github/masenf/tox-pin-deps/badge.svg?branch=main)](https://coveralls.io/github/masenf/tox-pin-deps?branch=main)
 [![PyPI version](https://badge.fury.io/py/tox-pin-deps.svg)](https://pypi.org/project/tox-pin-deps)
+![tox v3 + v4 support](https://img.shields.io/badge/tox-v3+v4-green)
 
 Run `tox` environments with **_strictly pinned_ dependencies** using simple,
 well-maintained tools (you're probably using already) with **no project or code changes.**
@@ -18,7 +20,7 @@ the locked deps installed, in the usual way via `pip`, on subsequent invocations
 3. Commit files under `{toxinidir}/requirements/*.txt` to version control.
 4. Subsequent runs of `tox` will install from the lock file.
 
-* Run `tox --pip-compile` at any time to re-lock dependencies based on:
+* Run `tox --pip-compile --pip-compile-opts \ --upgrade` at any time to lock updated dependencies based on:
   * `deps` named in `tox.ini` for the environment
   * Project ("dist") dependencies named in `pyproject.toml`,
     `setup.cfg`, or `setup.py`.
