@@ -75,7 +75,14 @@ def mock_pkg_quuc(tmp_path_factory, pkg_path, mock_pkg_bar):
 
 
 @pytest.fixture(scope="session")
-def all_mock_packages(mock_pkg_foo, mock_pkg_bar, mock_pkg_quuc):
+def mock_pkg_foo_ex(tmp_path_factory, pkg_path):
+    pkg_name = "mock_pkg_foo_ex"
+    versions = ["0.0.1"]
+    return mock_package_maker(pkg_name, versions, tmp_path_factory, pkg_path)
+
+
+@pytest.fixture(scope="session")
+def all_mock_packages(mock_pkg_foo, mock_pkg_bar, mock_pkg_quuc, mock_pkg_foo_ex):
     return dict([mock_pkg_foo, mock_pkg_bar, mock_pkg_quuc])
 
 
@@ -94,7 +101,7 @@ def save_pip_vars():
 @pytest.fixture(scope="session")
 def package_server(pkg_path, all_mock_packages, save_pip_vars):
     index = mock_packages.dumb_pypi_repo(pkg_path)
-    # os.environ["PIP_INDEX_URL"] = index
+    os.environ.pop("PIP_INDEX_URL", None)
     os.environ["PIP_EXTRA_INDEX_URL"] = index
     yield index
 
@@ -123,7 +130,7 @@ def example_environment_root(example_project_name, package_server):
 
 @pytest.fixture(
     scope="module",
-    params=["tox==3.27.1", "tox==4.0.5"],
+    params=["tox==3.27.1", "tox==4.4.5"],
 )
 def tox_version(request):
     return request.param
@@ -131,7 +138,17 @@ def tox_version(request):
 
 @pytest.fixture(scope="module")
 def tox_major(tox_version):
-    return "4" if "4" in tox_version else "3"
+    return "3" if "3" in tox_version else "4"
+
+
+@pytest.fixture(scope="module")
+def toxworkdir(tmp_path_factory, tox_version, mod_id):
+    workdir = tmp_path_factory.mktemp(f"workdir_{mod_id}_{tox_version}")
+    old_workdir = os.environ.get("TOX_WORK_DIR", None)
+    os.environ["TOX_WORK_DIR"] = str(workdir)
+    yield workdir
+    if old_workdir is not None:
+        os.environ["TOX_WORK_DIR"] = old_workdir
 
 
 @pytest.fixture(scope="module")
@@ -157,6 +174,8 @@ def tox_venv(tmp_path_factory, mod_id, tox_version):
     import pkg_resources
 
     pytest_cov_dist = pkg_resources.get_distribution("pytest-cov")
+    if tox_version == "tox-dev":
+        tox_version = "tox>4"
     subprocess.run(
         [
             tox_venv_path / "bin" / "python",
@@ -222,7 +241,7 @@ def link_tox_pin_deps(tox_venv, tox_venv_site_packages_dir):
 
 
 @pytest.fixture(scope="module")
-def tox_runner(tox_venv_python, link_tox_pin_deps, toxinidir):
+def tox_runner(tox_venv_python, link_tox_pin_deps, toxworkdir, toxinidir):
     def run_tox_cmd(*args):
         return subprocess.run(
             [tox_venv_python, "-m", "tox", *args],

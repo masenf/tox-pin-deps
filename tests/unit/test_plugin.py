@@ -31,6 +31,7 @@ def envconfig(venv_name, config):
     envconfig.pip_compile_opts = None
     envconfig.recreate = False
     envconfig.pip_pre = False
+    envconfig.extras = []
     config.envconfigs[venv_name] = envconfig
     config.envlist.append(venv_name)
     return envconfig
@@ -101,6 +102,12 @@ def skip_install(skip_install, envconfig):
 def pip_pre(pip_pre, envconfig):
     envconfig.pip_pre = pip_pre
     return pip_pre
+
+
+@pytest.fixture
+def extras(extras, envconfig):
+    envconfig.extras = extras
+    return extras
 
 
 @pytest.fixture
@@ -190,6 +197,7 @@ def test_tox_testenv_install_deps_will_install(
     venv,
     action,
     pip_pre,
+    extras,
     pip_compile_opts_env,
     pip_compile_opts_cli,
     pip_compile_opts_testenv,
@@ -235,6 +243,9 @@ def test_tox_testenv_install_deps_will_install(
         exp_opts.extend(shlex.split(pip_compile_opts_cli))
     if pip_compile_opts_env:
         exp_opts.extend(shlex.split(pip_compile_opts_env))
+    if extras:
+        for extra in extras:
+            exp_opts.extend(["--extra", extra])
     assert cmd[start_idx:] == exp_opts
 
 

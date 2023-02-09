@@ -6,3 +6,6 @@ build-backend = 'setuptools.build_meta'
 name = "pyproj"
 dependencies = ['mock_pkg_quuc']
 version = "0.0.1"
+
+[project.optional-dependencies]
+ex = ["mock_pkg_foo_ex"]

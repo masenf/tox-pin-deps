@@ -23,3 +23,9 @@ skipinst: commands[0]> pip freeze
 mock-pkg-bar==0.1.1
 mock-pkg-foo==0.1.0
 mock-pkg-quuc==2.0
+skipinst: OK
+extrafoo: commands[0]> pip freeze
+mock-pkg-bar==1.5
+mock-pkg-foo-ex==0.0.1
+mock-pkg-quuc==2.2
+pyproj @

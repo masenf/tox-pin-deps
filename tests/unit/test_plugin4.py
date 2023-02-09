@@ -25,7 +25,7 @@ def options(options):
 @pytest.fixture
 def conf():
     """tox4 per-testenv config."""
-    return dict(pip_compile_opts=None, skip_install=False, pip_pre=False)
+    return dict(pip_compile_opts=None, skip_install=False, pip_pre=False, extras=[])
 
 
 @pytest.fixture
@@ -106,6 +106,12 @@ def pip_pre(pip_pre, conf):
     return pip_pre
 
 
+@pytest.fixture
+def extras(extras, conf):
+    conf["extras"] = extras
+    return extras
+
+
 def test_install(
     toxinidir,
     venv_name,
@@ -168,6 +174,7 @@ def test_install_will_install(
     venv_name,
     toxinidir,
     pip_pre,
+    extras,
     pip_compile_opts_env,
     pip_compile_opts_cli,
     pip_compile_opts_testenv,
@@ -215,6 +222,9 @@ def test_install_will_install(
         exp_opts.extend(shlex.split(pip_compile_opts_cli))
     if pip_compile_opts_env:
         exp_opts.extend(shlex.split(pip_compile_opts_env))
+    if extras:
+        for extra in extras:
+            exp_opts.extend(["--extra", extra])
     assert cmd[start_idx:] == exp_opts
 
 

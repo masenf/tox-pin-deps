@@ -51,6 +51,12 @@ class PipCompileInstaller(PipCompile, Pip):
         """[testenv] pip_pre value."""
         return bool(self.venv.conf["pip_pre"])
 
+    @property
+    def env_extras(self) -> t.Sequence[str]:  # pragma: no cover
+        """[testenv] extras value."""
+        extras = self.venv.conf["extras"] if not self.skipsdist else []
+        return [str(extra) for extra in extras]
+
     @staticmethod
     def _deps(pydeps: PythonDeps) -> t.Sequence[str]:
         return pydeps.lines()
