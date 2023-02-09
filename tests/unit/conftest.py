@@ -121,7 +121,7 @@ def pip_pre(request):
     return request.param
 
 
-@pytest.fixture(params=[[], ["ex1", "ex2"]])
+@pytest.fixture(params=[[], ["ex1", "ex2"]], ids=["noextra", "extras"])
 def extras(request):
     return request.param
 

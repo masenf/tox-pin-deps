@@ -140,8 +140,9 @@ class PipCompile(abc.ABC):
             os.environ.get(ENV_PIP_COMPILE_OPTS),
         ]
         opts = [opt for source in sources for opt in shlex.split(source or "")]
-        for extra in self.env_extras:
-            opts.extend(["--extra", extra])
+        if not self.skipsdist:
+            for extra in self.env_extras:
+                opts.extend(["--extra", extra])
         return opts
 
     @property

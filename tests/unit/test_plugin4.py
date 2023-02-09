@@ -222,7 +222,7 @@ def test_install_will_install(
         exp_opts.extend(shlex.split(pip_compile_opts_cli))
     if pip_compile_opts_env:
         exp_opts.extend(shlex.split(pip_compile_opts_env))
-    if extras:
+    if extras and not skipsdist and not skip_install:
         for extra in extras:
             exp_opts.extend(["--extra", extra])
     assert cmd[start_idx:] == exp_opts
