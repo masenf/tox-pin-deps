@@ -19,6 +19,10 @@ from .compile import PipCompile
 class PipCompileInstaller(PipCompile, Pip):
     """tox4 Installer that uses `pip-compile` or env-specific lock files."""
 
+    def __init__(self, *args, **kwargs):  # type: ignore
+        self._installed_from_lock_file = False
+        super().__init__(*args, **kwargs)
+
     @property
     def toxinidir(self) -> Path:
         return Path(self.venv.core["toxinidir"])
@@ -97,6 +101,11 @@ class PipCompileInstaller(PipCompile, Pip):
                     raw=pinned_deps_spec,
                     root=self.env_requirements.parent,
                 )
+                self._installed_from_lock_file = True
+        if self._installed_from_lock_file and of_type == "package":
+            # do not override pinned deps with package requirements
+            for item in arguments:
+                item.deps[:] = []
         super().install(
             arguments=pinned_deps or arguments,
             section=section,
