@@ -105,8 +105,11 @@ class PipCompileInstaller(PipCompile, Pip):
                 self._installed_from_lock_file = True
         if self._installed_from_lock_file and of_type == "package":
             # do not override pinned deps with package requirements
-            for item in arguments:
-                item.deps[:] = []
+            try:
+                for item in arguments:
+                    item.deps[:] = []
+            except TypeError:
+                pass  # maybe given something other than a list of packages?
         super().install(
             arguments=pinned_deps or arguments,
             section=section,

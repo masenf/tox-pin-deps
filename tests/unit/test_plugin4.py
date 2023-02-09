@@ -283,3 +283,33 @@ def test_register_config(venv):
     assert isinstance(orig_installer, tox_pin_deps.plugin4.PipCompileInstaller)
     # subsequent access to the installer should return the same instance
     assert inst.installer is orig_installer
+
+
+@pytest.mark.parametrize(
+    "installed_from_lock_file", [True, False], ids=["installed_from_lock_file", ""]
+)
+@pytest.mark.parametrize("weird_type", [True, False], ids=["weird_type", "list"])
+def test_install_package_deps(venv, installed_from_lock_file, weird_type):
+    mockdep = mock.Mock()
+    exp_package_deps = ["foo", "bar"]
+    mockdep.deps = exp_package_deps
+    pip_compile_installer = tox_pin_deps.plugin4.PipCompileInstaller(venv)
+    if installed_from_lock_file:
+        pip_compile_installer._installed_from_lock_file = installed_from_lock_file
+    if weird_type:
+        # typically arguments would be iterable, but Mock is not
+        arguments = mockdep
+    else:
+        arguments = [mockdep]
+    assert pip_compile_installer.install(arguments, None, "package") is None
+    pip_mock = ShimBaseMock._get_last_instance_and_reset(assert_n_instances=1)
+    pip_mock._install_mock.assert_called_once_with(
+        arguments=arguments,
+        section=None,
+        of_type="package",
+    )
+    assert len(venv.execute.mock_calls) == 0
+    if installed_from_lock_file and not weird_type:
+        assert mockdep.deps == []
+    else:
+        assert mockdep.deps == exp_package_deps
