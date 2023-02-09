@@ -53,6 +53,11 @@ class PipCompileTox3(PipCompile, ShimBase):
         """[testenv] pip_pre value."""
         return bool(self.venv.envconfig.pip_pre)
 
+    @property
+    def env_extras(self) -> t.Sequence[str]:  # pragma: no cover
+        """[testenv] extras value."""
+        return [str(extra) for extra in (self.venv.envconfig.extras or [])]
+
     def execute(
         self,
         cmd: t.Sequence[str],

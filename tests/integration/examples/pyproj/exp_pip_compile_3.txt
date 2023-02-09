@@ -40,3 +40,15 @@ mock-pkg-bar==0.1.1
 mock-pkg-foo==0.1.0
 mock-pkg-quuc==2.0
 pip-tools==
+extrafoo tox-pin-deps: ['pip', 'install', 'pip-tools']
+~reextrafoo tox-pin-deps: \['pip-compile', '/.*/pyproj/pyproject.toml', '--output-file', '/.*/pyproj/requirements/extrafoo\.txt', '--generate-hashes', '-v', '--extra-index-url', '.*', '--extra', 'ex']
+~reextrafoo installdeps: -r/.*/pyproj/requirements/extrafoo\.txt
+extrafoo inst:
+extrafoo installed:
+extrafoo run-test: commands[0] | pip freeze
+mock-pkg-bar==1.5
+mock-pkg-foo==0.1.0
+mock-pkg-foo-ex==0.0.1
+mock-pkg-quuc==2.2
+pip-tools==
+pyproj @

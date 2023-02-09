@@ -121,6 +121,11 @@ def pip_pre(request):
     return request.param
 
 
+@pytest.fixture(params=[[], ["ex1", "ex2"]], ids=["noextra", "extras"])
+def extras(request):
+    return request.param
+
+
 @pytest.fixture(params=[True, False], ids=["setup.py", "no_setup.py"])
 def setup_py(request, toxinidir):
     if request.param:

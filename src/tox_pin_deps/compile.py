@@ -87,6 +87,12 @@ class PipCompile(abc.ABC):
         """[testenv] pip_pre value."""
         raise NotImplementedError
 
+    @property
+    @abc.abstractmethod
+    def env_extras(self) -> t.Sequence[str]:  # pragma: no cover
+        """Extras defined for the local package in [testenv] extras key."""
+        raise NotImplementedError
+
     @abc.abstractmethod
     def execute(
         self,
@@ -124,13 +130,20 @@ class PipCompile(abc.ABC):
         * specified in the environment as PIP_COMPILE_OPTS
 
         Options are combined in the order above.
+
+        Additional internal options are added here:
+        * extras
         """
         sources = [
             self.env_pip_compile_opts_env,
             self.options.pip_compile_opts,
             os.environ.get(ENV_PIP_COMPILE_OPTS),
         ]
-        return [opt for source in sources for opt in shlex.split(source or "")]
+        opts = [opt for source in sources for opt in shlex.split(source or "")]
+        if not self.skipsdist:
+            for extra in self.env_extras:
+                opts.extend(["--extra", extra])
+        return opts
 
     @property
     def _has_pinned_deps(self) -> bool:
