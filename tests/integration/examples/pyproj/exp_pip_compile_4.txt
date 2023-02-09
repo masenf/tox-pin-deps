@@ -1,7 +1,6 @@
 nodeps: tox-pin-deps> pip install pip-tools
 ~renodeps: tox-pin-deps> pip-compile /.*/pyproj/pyproject\.toml --output-file /.*/pyproj/requirements/nodeps\.txt --generate-hashes -v --resolver=backtracking --extra-index-url
 ~renodeps: install_deps> python -I -m pip install -r /.*/pyproj/requirements/nodeps\.txt
-nodeps: install_package_deps> python -I -m pip install mock_pkg_quuc
 nodeps: install_package>
 nodeps: commands[0]> pip freeze
 mock-pkg-bar==1.5
@@ -13,7 +12,6 @@ nodeps: OK
 prefoo: tox-pin-deps> pip install pip-tools
 ~reprefoo: tox-pin-deps> pip-compile --pre /.*/pyproj/pyproject\.toml --output-file /.*/pyproj/requirements/prefoo\.txt --resolver=backtracking --extra-index-url
 ~reprefoo: install_deps> python -I -m pip install --pre -r /.*/pyproj/requirements/prefoo\.txt --pre
-prefoo: install_package_deps> python -I -m pip install --pre mock_pkg_quuc --pre
 prefoo: install_package>
 prefoo: commands[0]> pip freeze
 mock-pkg-bar==1.5
@@ -25,7 +23,6 @@ prefoo: OK
 oldfoo: tox-pin-deps> pip install pip-tools
 ~reoldfoo: tox-pin-deps> pip-compile /.*/pyproj/.tox-pin-deps-oldfoo-requirements\..*\.in /.*/pyproj/pyproject\.toml --output-file /.*/pyproj/requirements/oldfoo\.txt --generate-hashes -v --extra-index-url
 ~reoldfoo: install_deps> python -I -m pip install -r /.*/pyproj/requirements/oldfoo\.txt
-oldfoo: install_package_deps> python -I -m pip install mock_pkg_quuc
 oldfoo: install_package>
 oldfoo: commands[0]> pip freeze
 mock-pkg-bar==1.5

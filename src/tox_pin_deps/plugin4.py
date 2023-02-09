@@ -7,6 +7,7 @@ from tox.config.cli.parser import DEFAULT_VERBOSITY, ToxParser
 from tox.execute.request import StdinSource
 from tox.plugin import impl
 from tox.tox_env.api import ToxEnvCreateArgs
+from tox.tox_env.python.api import Python
 from tox.tox_env.python.pip.pip_install import Pip
 from tox.tox_env.python.pip.req_file import PythonDeps
 from tox.tox_env.python.virtual_env.runner import VirtualEnvRunner
@@ -18,6 +19,10 @@ from .compile import PipCompile
 
 class PipCompileInstaller(PipCompile, Pip):
     """tox4 Installer that uses `pip-compile` or env-specific lock files."""
+
+    def __init__(self, tox_env: Python, with_list_deps: bool = True):
+        self._installed_from_lock_file = False
+        super().__init__(tox_env, with_list_deps)
 
     @property
     def toxinidir(self) -> Path:
@@ -97,6 +102,14 @@ class PipCompileInstaller(PipCompile, Pip):
                     raw=pinned_deps_spec,
                     root=self.env_requirements.parent,
                 )
+                self._installed_from_lock_file = True
+        if self._installed_from_lock_file and of_type == "package":
+            # do not override pinned deps with package requirements
+            try:
+                for item in arguments:
+                    item.deps[:] = []
+            except TypeError:
+                pass  # maybe given something other than a list of packages?
         super().install(
             arguments=pinned_deps or arguments,
             section=section,

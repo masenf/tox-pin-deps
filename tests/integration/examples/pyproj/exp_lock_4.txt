@@ -1,5 +1,4 @@
 ~renodeps: install_deps> python -I -m pip install -r /.*/pyproj/requirements/nodeps\.txt
-nodeps: install_package_deps> python -I -m pip install mock_pkg_quuc
 nodeps: install_package>
 nodeps: commands[0]> pip freeze
 mock-pkg-bar==1.5
@@ -8,7 +7,6 @@ mock-pkg-quuc==2.2
 pyproj @
 nodeps: OK
 ~reprefoo: install_deps> python -I -m pip install --pre -r /.*/pyproj/requirements/prefoo\.txt --pre
-prefoo: install_package_deps> python -I -m pip install --pre mock_pkg_quuc --pre
 prefoo: install_package>
 prefoo: commands[0]> pip freeze
 mock-pkg-bar==1.5
@@ -17,7 +15,6 @@ mock-pkg-quuc==2.2
 pyproj @
 prefoo: OK
 ~reoldfoo: install_deps> python -I -m pip install -r /.*/pyproj/requirements/oldfoo\.txt
-oldfoo: install_package_deps> python -I -m pip install mock_pkg_quuc
 oldfoo: install_package>
 oldfoo: commands[0]> pip freeze
 mock-pkg-bar==1.5
